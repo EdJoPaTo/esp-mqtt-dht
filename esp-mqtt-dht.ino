@@ -93,7 +93,7 @@ void reconnect() {
 #else
     if (client.connect((char*) clientName.c_str(), MQTT_TOPIC_SENSOR "/connected", 0, MQTT_RETAINED, "0")) {
 #endif
-      Serial.println("connected");
+      Serial.println("MQTT connected");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -165,9 +165,9 @@ void loop() {
   int nextConnected = readSuccessful ? 2 : 1;
 
   if (nextConnected != lastConnected) {
-    Serial.print("connected: ");
+    Serial.print("set /connected from ");
     Serial.print(lastConnected);
-    Serial.print(" ");
+    Serial.print(" to ");
     Serial.println(nextConnected);
     lastConnected = nextConnected;
     client.publish(MQTT_TOPIC_SENSOR "/connected", String(nextConnected).c_str(), MQTT_RETAINED);
