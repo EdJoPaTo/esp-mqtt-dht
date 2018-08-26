@@ -132,7 +132,7 @@ float handleNewSensorValue(float sensorValue, float buffer[], int *bufferCurrent
   buffer[*bufferCurrentIndex] = sensorValue;
   float avg = calculateRollingAverage(*bufferCurrentSize, bufferTotalSize, buffer, *bufferCurrentIndex);
 
-  if (*bufferCurrentIndex % sendFrequency == 0) {
+  if (*bufferCurrentIndex % sendFrequency == sendFrequency - 1) {
     Serial.print("publish ");
     Serial.print(mqttTopic);
     Serial.print(" ");
