@@ -175,13 +175,12 @@ void loop() {
 
   if (readSuccessful) {
     float avgT = handleNewSensorValue(t, rollingBufferTemperature, &rollingBufferTempCurrentSize, &rollingBufferTempCurrentIndex, ROLLING_AVERAGE_BUFFER_SIZE_TEMP, SEND_EVERY_TEMP, MQTT_TOPIC_SENSOR "/temp", MQTT_RETAINED);
-    float avgH = handleNewSensorValue(h, rollingBufferHumidity, &rollingBufferHumCurrentSize, &rollingBufferHumCurrentIndex, ROLLING_AVERAGE_BUFFER_SIZE_HUM, SEND_EVERY_HUM, MQTT_TOPIC_SENSOR "/hum", MQTT_RETAINED);
-
     Serial.print("Temperature in Celsius: ");
     Serial.print(String(t).c_str());
     Serial.print(" Average: ");
     Serial.println(String(avgT).c_str());
 
+    float avgH = handleNewSensorValue(h, rollingBufferHumidity, &rollingBufferHumCurrentSize, &rollingBufferHumCurrentIndex, ROLLING_AVERAGE_BUFFER_SIZE_HUM, SEND_EVERY_HUM, MQTT_TOPIC_SENSOR "/hum", MQTT_RETAINED);
     Serial.print("Humidity    in Percent: ");
     Serial.print(String(h).c_str());
     Serial.print(" Average: ");
