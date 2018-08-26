@@ -20,7 +20,7 @@ int rollingBufferHumCurrentSize = 0;
 int rollingBufferRssiCurrentIndex = 0;
 int rollingBufferRssiCurrentSize = 0;
 
-int lastConnected = 0
+int lastConnected = 0;
 
 DHT dht(DHTPIN, DHTTYPE);
 
@@ -167,15 +167,15 @@ void loop() {
   float t = dht.readTemperature();
   float h = dht.readHumidity();
 
-  boolean readSuccessful = !isnan(t) && !isnan(h)
-  int nextConnected = readSuccessful ? 2 : 1
+  boolean readSuccessful = !isnan(t) && !isnan(h);
+  int nextConnected = readSuccessful ? 2 : 1;
 
   if (nextConnected != lastConnected) {
     Serial.print("connected: ");
     Serial.print(lastConnected);
     Serial.print(" ");
     Serial.println(nextConnected);
-    lastConnected = nextConnected
+    lastConnected = nextConnected;
     client.publish(mqttTopic, String(nextConnected).c_str(), MQTT_RETAINED);
   }
 
