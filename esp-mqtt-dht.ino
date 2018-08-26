@@ -127,7 +127,7 @@ float handleNewSensorValue(float sensorValue, float buffer[], int *bufferCurrent
   Serial.print(*bufferCurrentSize);
   Serial.print(" total: ");
   Serial.println(bufferTotalSize);
-*/
+/**/
 
   buffer[*bufferCurrentIndex] = sensorValue;
   float avg = calculateRollingAverage(*bufferCurrentSize, bufferTotalSize, buffer, *bufferCurrentIndex);
