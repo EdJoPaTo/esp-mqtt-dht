@@ -19,8 +19,8 @@ int rollingBufferHumCurrentIndex = 0;
 int rollingBufferHumCurrentSize = 0;
 int rollingBufferRssiCurrentIndex = 0;
 int rollingBufferRssiCurrentSize = 0;
-boolean recentFailTemp = true;
-boolean recentFailHum = true;
+
+int lastConnected = 0
 
 DHT dht(DHTPIN, DHTTYPE);
 
@@ -88,11 +88,17 @@ void reconnect() {
 
 
     // Attempt to connect
+    if (client.connect( \
+      (char*) clientName.c_str() \
 #ifdef MQTT_USER
-    if (client.connect((char*) clientName.c_str()), MQTT_USER, MQTT_PASSWORD)) {
-#else
-    if (client.connect((char*) clientName.c_str())) {
+      , MQTT_USER
+      , MQTT_PASSWORD
 #endif
+      , MQTT_TOPIC_SENSOR "/connected"
+      , 0
+      , MQTT_RETAINED
+      , "0"
+    )) {
       Serial.println("connected");
     } else {
       Serial.print("failed, rc=");
@@ -115,7 +121,7 @@ float calculateRollingAverage(int currentSize, int rollingBufferSize, float roll
   return sum / currentSize;
 }
 
-float handleNewSensorValue(float sensorValue, float buffer[], int *bufferCurrentSize, int *bufferCurrentIndex, int bufferTotalSize, int sendFrequency, boolean *recentFail, const char* mqttTopic, boolean retained) {
+float handleNewSensorValue(float sensorValue, float buffer[], int *bufferCurrentSize, int *bufferCurrentIndex, int bufferTotalSize, int sendFrequency, const char* mqttTopic, boolean retained) {
   if (*bufferCurrentSize < bufferTotalSize) {
     *bufferCurrentSize += 1;
   }
@@ -126,15 +132,13 @@ float handleNewSensorValue(float sensorValue, float buffer[], int *bufferCurrent
   Serial.print(" size: ");
   Serial.print(*bufferCurrentSize);
   Serial.print(" total: ");
-  Serial.print(bufferTotalSize);
-  Serial.print(" fail: ");
-  Serial.println(*recentFail);
+  Serial.println(bufferTotalSize);
 */
 
   buffer[*bufferCurrentIndex] = sensorValue;
   float avg = calculateRollingAverage(*bufferCurrentSize, bufferTotalSize, buffer, *bufferCurrentIndex);
 
-  if (*recentFail || *bufferCurrentIndex % sendFrequency == 0) {
+  if (*bufferCurrentIndex % sendFrequency == 0) {
     Serial.print("publish ");
     Serial.print(mqttTopic);
     Serial.print(" ");
@@ -146,8 +150,6 @@ float handleNewSensorValue(float sensorValue, float buffer[], int *bufferCurrent
 
   *bufferCurrentIndex += 1;
   *bufferCurrentIndex %= bufferTotalSize;
-
-  *recentFail = false;
 
   return avg;
 }
@@ -165,9 +167,21 @@ void loop() {
   float t = dht.readTemperature();
   float h = dht.readHumidity();
 
-  if (!isnan(t) && !isnan(h)) {
-    float avgT = handleNewSensorValue(t, rollingBufferTemperature, &rollingBufferTempCurrentSize, &rollingBufferTempCurrentIndex, ROLLING_AVERAGE_BUFFER_SIZE_TEMP, SEND_EVERY_TEMP, &recentFailTemp, MQTT_TOPIC_SENSOR "/temp", MQTT_RETAINED);
-    float avgH = handleNewSensorValue(h, rollingBufferHumidity, &rollingBufferHumCurrentSize, &rollingBufferHumCurrentIndex, ROLLING_AVERAGE_BUFFER_SIZE_HUM, SEND_EVERY_HUM, &recentFailHum, MQTT_TOPIC_SENSOR "/hum", MQTT_RETAINED);
+  boolean readSuccessful = !isnan(t) && !isnan(h)
+  int nextConnected = readSuccessful ? 2 : 1
+
+  if (nextConnected != lastConnected) {
+    Serial.print("connected: ");
+    Serial.print(lastConnected);
+    Serial.print(" ");
+    Serial.println(nextConnected);
+    lastConnected = nextConnected
+    client.publish(mqttTopic, String(nextConnected).c_str(), MQTT_RETAINED);
+  }
+
+  if (readSuccessful) {
+    float avgT = handleNewSensorValue(t, rollingBufferTemperature, &rollingBufferTempCurrentSize, &rollingBufferTempCurrentIndex, ROLLING_AVERAGE_BUFFER_SIZE_TEMP, SEND_EVERY_TEMP, MQTT_TOPIC_SENSOR "/temp", MQTT_RETAINED);
+    float avgH = handleNewSensorValue(h, rollingBufferHumidity, &rollingBufferHumCurrentSize, &rollingBufferHumCurrentIndex, ROLLING_AVERAGE_BUFFER_SIZE_HUM, SEND_EVERY_HUM, MQTT_TOPIC_SENSOR "/hum", MQTT_RETAINED);
 
     Serial.print("Temperature in Celsius: ");
     Serial.print(String(t).c_str());
@@ -186,14 +200,10 @@ void loop() {
     if (rollingBufferHumCurrentSize > 0) {
       rollingBufferHumCurrentSize--;
     }
-    recentFailTemp = true;
-    recentFailHum = true;
   }
 
-
   long rssi = WiFi.RSSI();
-  boolean recentFailRssi = false;
-  float avgRssi = handleNewSensorValue(rssi, rollingBufferRssi, &rollingBufferRssiCurrentSize, &rollingBufferRssiCurrentIndex, ROLLING_AVERAGE_BUFFER_SIZE_RSSI, SEND_EVERY_RSSI, &recentFailRssi, MQTT_TOPIC_SENSOR "/rssi", false);
+  float avgRssi = handleNewSensorValue(rssi, rollingBufferRssi, &rollingBufferRssiCurrentSize, &rollingBufferRssiCurrentIndex, ROLLING_AVERAGE_BUFFER_SIZE_RSSI, SEND_EVERY_RSSI, MQTT_TOPIC_SENSOR "/rssi", false);
   Serial.print("RSSI        in dBm:     ");
   Serial.print(String(rssi).c_str());
   Serial.print("   Average: ");
