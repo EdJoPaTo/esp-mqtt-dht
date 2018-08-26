@@ -170,7 +170,7 @@ void loop() {
     Serial.print(" ");
     Serial.println(nextConnected);
     lastConnected = nextConnected;
-    client.publish(mqttTopic, String(nextConnected).c_str(), MQTT_RETAINED);
+    client.publish(MQTT_TOPIC_SENSOR "/connected", String(nextConnected).c_str(), MQTT_RETAINED);
   }
 
   if (readSuccessful) {
