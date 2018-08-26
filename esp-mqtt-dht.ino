@@ -88,17 +88,11 @@ void reconnect() {
 
 
     // Attempt to connect
-    if (client.connect( \
-      (char*) clientName.c_str() \
 #ifdef MQTT_USER
-      , MQTT_USER
-      , MQTT_PASSWORD
+    if (client.connect((char*) clientName.c_str(), MQTT_USER, MQTT_PASSWORD, MQTT_TOPIC_SENSOR "/connected", 0, MQTT_RETAINED, "0")) {
+#else
+    if (client.connect((char*) clientName.c_str(), MQTT_TOPIC_SENSOR "/connected", 0, MQTT_RETAINED, "0")) {
 #endif
-      , MQTT_TOPIC_SENSOR "/connected"
-      , 0
-      , MQTT_RETAINED
-      , "0"
-    )) {
       Serial.println("connected");
     } else {
       Serial.print("failed, rc=");
