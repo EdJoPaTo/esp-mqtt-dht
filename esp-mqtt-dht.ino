@@ -1,9 +1,9 @@
+#include "config.h"
+
 #include <ESP8266WiFi.h>
 #include <Wire.h>
 #include <PubSubClient.h>
 #include "DHT.h"
-
-#include "config.h"
 
 // the following consts are calculated for easier use while program
 const int ROLLING_AVERAGE_BUFFER_SIZE_TEMP = ROLLING_AVERAGE_BUFFER_SIZE_MULTIPLE_OF_SEND_FREQUENCY * SEND_EVERY_TEMP;
