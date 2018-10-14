@@ -21,6 +21,7 @@ int rollingBufferRssiCurrentIndex = 0;
 int rollingBufferRssiCurrentSize = 0;
 
 int lastConnected = 0;
+boolean lastReadSuccessful = false;
 
 DHT dht(DHTPIN, DHTTYPE);
 
@@ -162,7 +163,8 @@ void loop() {
   float h = dht.readHumidity();
 
   boolean readSuccessful = !isnan(t) && !isnan(h);
-  int nextConnected = readSuccessful ? 2 : 1;
+  int nextConnected = readSuccessful || lastReadSuccessful ? 2 : 1;
+  lastReadSuccessful = readSuccessful;
 
   if (nextConnected != lastConnected) {
     Serial.print("set /connected from ");
