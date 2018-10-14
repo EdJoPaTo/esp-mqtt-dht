@@ -151,6 +151,7 @@ float handleNewSensorValue(float sensorValue, float buffer[], int *bufferCurrent
 
 void loop() {
   if (!client.connected()) {
+    lastConnected = 0;
     reconnect();
   }
   client.loop();
