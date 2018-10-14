@@ -13,6 +13,8 @@
 #define MQTT_TOPIC_SENSOR MQTT_TOPIC_BASE SENSOR_NAME
 
 const boolean MQTT_RETAINED = true;
+// increase the KeepAlive to 120s. Default is 15s
+#define MQTT_KEEPALIVE 120
 
 // Uncomment whatever type you're using!
 //#define DHTTYPE DHT11 // DHT 11
