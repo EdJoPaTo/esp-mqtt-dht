@@ -30,10 +30,12 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 
 void setup() {
+  pinMode(D0, OUTPUT);
   Serial.begin(115200);
   dht.begin();
   setup_wifi();
   client.setServer(MQTT_SERVER, 1883);
+  client.setCallback(callback);
 }
 
 String macToStr(const uint8_t* mac)
@@ -94,6 +96,8 @@ void reconnect() {
     if (client.connect((char*) clientName.c_str(), MQTT_TOPIC_SENSOR "/connected", 0, MQTT_RETAINED, "0")) {
 #endif
       Serial.println("MQTT connected");
+      client.subscribe(MQTT_TOPIC_SENSOR "/identify");
+      Serial.println("MQTT subscribed identify");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -102,6 +106,18 @@ void reconnect() {
       delay(5000);
     }
   }
+}
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+
+  digitalWrite(D0, LOW); // Turn the LED on
 }
 
 float calculateRollingAverage(int currentSize, int rollingBufferSize, float rollingBuffer[], int currentIndex) {
@@ -153,6 +169,8 @@ void loop() {
     lastConnected = 0;
     reconnect();
   }
+
+  digitalWrite(D0, HIGH); // Turn the LED off by making the voltage HIGH
   client.loop();
 
   delay(1000);
