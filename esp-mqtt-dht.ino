@@ -22,6 +22,7 @@ int rollingBufferRssiCurrentSize = 0;
 
 int lastConnected = 0;
 boolean lastReadSuccessful = false;
+int currentCycle = 0;
 
 DHT dht(DHTPIN, DHTTYPE);
 
@@ -154,8 +155,13 @@ void loop() {
   }
   client.loop();
 
-  // Wait a few seconds between measurements.
-  delay(5000);
+  delay(1000);
+
+  currentCycle++;
+  if (currentCycle < 5) {
+    return;
+  }
+  currentCycle = 0;
 
   // Read temperature as Celsius (the default)
   float t = dht.readTemperature();
