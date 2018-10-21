@@ -24,8 +24,8 @@ const boolean MQTT_RETAINED = true;
 const int DHTPIN = 12; // digital pin of the NodeMCU (D6 in this case)
 
 // hint: 1 measurement every 5 seconds, 12 measurements every minute
-const int SEND_EVERY_TEMP = 3; // send every 15 seconds
-const int SEND_EVERY_HUM = 12; // send every 60 seconds
+const int SEND_EVERY_TEMP = 12; // send every 60 seconds
+const int SEND_EVERY_HUM = 12 * 2; // send every 2 minutes
 const int SEND_EVERY_RSSI = 12 * 10; // send every 10 minutes
 
 // the time of the rolling average is 4 times higher than the time between two sends
