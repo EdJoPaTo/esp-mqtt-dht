@@ -73,15 +73,13 @@ void reconnect() {
   while (!client.connected()) {
     Serial.println("Attempting MQTT connection...");
 
-    // Generate client name based on MAC address and last 8 bits of microsecond counter
+    // Generate client name based on MAC address
     String clientName;
     clientName += "esp8266-";
     clientName += SENSOR_NAME "-";
     uint8_t mac[6];
     WiFi.macAddress(mac);
     clientName += macToStr(mac);
-    clientName += "-";
-    clientName += String(micros() & 0xff, 16);
     Serial.print("Connecting to ");
     Serial.print(MQTT_SERVER);
     Serial.print(" as ");
