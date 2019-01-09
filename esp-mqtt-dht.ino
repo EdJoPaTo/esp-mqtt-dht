@@ -3,7 +3,7 @@
 #include <ESP8266WiFi.h>
 #include <Wire.h>
 #include <PubSubClient.h>
-#include "DHT.h"
+#include "DHTesp.h"
 
 // the following consts are calculated for easier use while program
 const int ROLLING_AVERAGE_BUFFER_SIZE_TEMP = ROLLING_AVERAGE_BUFFER_SIZE_MULTIPLE_OF_SEND_FREQUENCY * SEND_EVERY_TEMP;
@@ -24,7 +24,7 @@ int lastConnected = 0;
 boolean lastReadSuccessful = false;
 int currentCycle = 0;
 
-DHT dht(DHTPIN, DHTTYPE);
+DHTesp dht;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -32,10 +32,19 @@ PubSubClient client(espClient);
 void setup() {
   pinMode(D0, OUTPUT);
   Serial.begin(115200);
-  dht.begin();
+  dht.setup(DHTPIN, DHTTYPE);
   setup_wifi();
   client.setServer(MQTT_SERVER, 1883);
   client.setCallback(callback);
+
+  Serial.print("DHT Sensor type assumed: ");
+  if (dht.getModel() == DHTesp::DHT22) {
+    Serial.println("DHT22");
+  } else if (dht.getModel() == DHTesp::DHT11) {
+    Serial.println("DHT11");
+  } else {
+    Serial.println(dht.getModel());
+  }
 }
 
 String macToStr(const uint8_t* mac)
@@ -182,10 +191,10 @@ void loop() {
   currentCycle = 0;
 
   // Read temperature as Celsius (the default)
-  float t = dht.readTemperature();
-  float h = dht.readHumidity();
+  float t = dht.getTemperature();
+  float h = dht.getHumidity();
 
-  boolean readSuccessful = !isnan(t) && !isnan(h);
+  boolean readSuccessful = dht.getStatus() == DHTesp::ERROR_NONE;
   int nextConnected = readSuccessful || lastReadSuccessful ? 2 : 1;
   lastReadSuccessful = readSuccessful;
 
@@ -211,7 +220,8 @@ void loop() {
     Serial.print(" Average: ");
     Serial.println(String(avgH).c_str());
   } else {
-    Serial.println("Failed to read from sensor!");
+    Serial.print("Failed to read from sensor! ");
+    Serial.println(dht.getStatusString());
     if (rollingBufferTempCurrentSize > 0) {
       rollingBufferTempCurrentSize--;
     }

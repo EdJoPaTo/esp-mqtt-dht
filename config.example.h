@@ -17,9 +17,9 @@ const boolean MQTT_RETAINED = true;
 #define MQTT_KEEPALIVE 120
 
 // Uncomment whatever type you're using!
-//#define DHTTYPE DHT11 // DHT 11
-#define DHTTYPE DHT22 // DHT 22 (AM2302), AM2321
-//#define DHTTYPE DHT21 // DHT 21 (AM2301)
+#define DHTTYPE DHTesp::AUTO_DETECT
+//#define DHTTYPE DHTesp::DHT11 // DHT 11
+//#define DHTTYPE DHTesp::DHT22 // DHT 22
 
 const int DHTPIN = 12; // digital pin of the NodeMCU (D6 in this case)
 
