@@ -17,7 +17,8 @@ const boolean MQTT_RETAINED = true;
 #define MQTT_KEEPALIVE 120
 
 // Uncomment whatever type you're using!
-#define DHTTYPE DHTesp::AUTO_DETECT
+// Beware of AUTO_DETECT as it can have different results after each startup (fails or temp is 0 then)
+//#define DHTTYPE DHTesp::AUTO_DETECT
 //#define DHTTYPE DHTesp::DHT11 // DHT 11
 //#define DHTTYPE DHTesp::DHT22 // DHT 22
 
