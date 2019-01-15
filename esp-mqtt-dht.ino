@@ -6,16 +6,17 @@
 #include <SimpleKalmanFilter.h>
 #include <Wire.h>
 
-#include "mathHelper.h"
-
 SimpleKalmanFilter kalmanTemp(0.5, 10, 0.01);
 SimpleKalmanFilter kalmanHum(0.2, 10, 0.01);
 SimpleKalmanFilter kalmanRssi(1, 10, 0.01);
 
 int lastConnected = 0;
 const int SECONDS_BETWEEN_MEASURE = 5;
-const int MAX_CYCLES = lcm(SEND_EVERY_TEMP, lcm(SEND_EVERY_HUM, SEND_EVERY_RSSI));
 int currentCycle = 0;
+
+int sendTemp = 0;
+int sendHum = 0;
+int sendRssi = 0;
 
 DHTesp dht;
 
@@ -148,10 +149,10 @@ void loop() {
   delay(1000);
 
   currentCycle++;
-  currentCycle %= MAX_CYCLES * SECONDS_BETWEEN_MEASURE;
-  if (currentCycle % SECONDS_BETWEEN_MEASURE > 0) {
+  if (currentCycle < SECONDS_BETWEEN_MEASURE) {
     return;
   }
+  currentCycle = 0;
 
   // Read temperature as Celsius (the default)
   float t = dht.getTemperature();
@@ -171,7 +172,9 @@ void loop() {
 
   if (readSuccessful) {
     float avgT = kalmanTemp.updateEstimate(t);
-    if ((currentCycle % (SEND_EVERY_TEMP * SECONDS_BETWEEN_MEASURE)) == 0) {
+    sendTemp++;
+    if (sendTemp >= SEND_EVERY_TEMP) {
+      sendTemp = 0;
       publish(MQTT_TOPIC_SENSOR "/temp", avgT, MQTT_RETAINED);
     }
     Serial.print("Temperature in Celsius: ");
@@ -180,7 +183,9 @@ void loop() {
     Serial.println(String(avgT).c_str());
 
     float avgH = kalmanHum.updateEstimate(h);
-    if ((currentCycle % (SEND_EVERY_HUM * SECONDS_BETWEEN_MEASURE)) == 0) {
+    sendHum++;
+    if (sendHum >= SEND_EVERY_HUM) {
+      sendHum = 0;
       publish(MQTT_TOPIC_SENSOR "/hum", avgH, MQTT_RETAINED);
     }
     Serial.print("Humidity    in Percent: ");
@@ -194,7 +199,9 @@ void loop() {
 
   long rssi = WiFi.RSSI();
   float avgRssi = kalmanRssi.updateEstimate(rssi);
-  if ((currentCycle % (SEND_EVERY_RSSI * SECONDS_BETWEEN_MEASURE)) == 0) {
+  sendRssi++;
+  if (sendRssi >= SEND_EVERY_RSSI) {
+    sendRssi = 0;
     publish(MQTT_TOPIC_SENSOR "/rssi", avgRssi, MQTT_RETAINED);
   }
   Serial.print("RSSI        in dBm:     ");
