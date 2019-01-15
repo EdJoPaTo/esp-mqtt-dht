@@ -26,7 +26,3 @@ const int DHTPIN = 12; // digital pin of the NodeMCU (D6 in this case)
 const int SEND_EVERY_TEMP = 12; // send every 60 seconds
 const int SEND_EVERY_HUM = 12 * 2; // send every 2 minutes
 const int SEND_EVERY_RSSI = 12 * 10; // send every 10 minutes
-
-// the time of the rolling average is 4 times higher than the time between two sends
-// example: every 15 sends with a rolling average over 60 seconds
-const int ROLLING_AVERAGE_BUFFER_SIZE_MULTIPLE_OF_SEND_FREQUENCY = 4;

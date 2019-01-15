@@ -1,26 +1,20 @@
 #include "config.h"
 
+#include <DHTesp.h>
 #include <ESP8266WiFi.h>
-#include <Wire.h>
 #include <PubSubClient.h>
-#include "DHTesp.h"
+#include <SimpleKalmanFilter.h>
+#include <Wire.h>
 
-// the following consts are calculated for easier use while program
-const int ROLLING_AVERAGE_BUFFER_SIZE_TEMP = ROLLING_AVERAGE_BUFFER_SIZE_MULTIPLE_OF_SEND_FREQUENCY * SEND_EVERY_TEMP;
-const int ROLLING_AVERAGE_BUFFER_SIZE_HUM = ROLLING_AVERAGE_BUFFER_SIZE_MULTIPLE_OF_SEND_FREQUENCY * SEND_EVERY_HUM;
-const int ROLLING_AVERAGE_BUFFER_SIZE_RSSI = ROLLING_AVERAGE_BUFFER_SIZE_MULTIPLE_OF_SEND_FREQUENCY * SEND_EVERY_RSSI;
+#include "mathHelper.h"
 
-float rollingBufferTemperature[ROLLING_AVERAGE_BUFFER_SIZE_TEMP];
-float rollingBufferHumidity[ROLLING_AVERAGE_BUFFER_SIZE_HUM];
-float rollingBufferRssi[ROLLING_AVERAGE_BUFFER_SIZE_RSSI];
-int rollingBufferTempCurrentIndex = 0;
-int rollingBufferTempCurrentSize = 0;
-int rollingBufferHumCurrentIndex = 0;
-int rollingBufferHumCurrentSize = 0;
-int rollingBufferRssiCurrentIndex = 0;
-int rollingBufferRssiCurrentSize = 0;
+SimpleKalmanFilter kalmanTemp(0.5, 10, 0.01);
+SimpleKalmanFilter kalmanHum(0.2, 10, 0.01);
+SimpleKalmanFilter kalmanRssi(1, 10, 0.01);
 
 int lastConnected = 0;
+const int SECONDS_BETWEEN_MEASURE = 5;
+const int MAX_CYCLES = lcm(SEND_EVERY_TEMP, lcm(SEND_EVERY_HUM, SEND_EVERY_RSSI));
 int currentCycle = 0;
 
 DHTesp dht;
@@ -132,48 +126,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
   digitalWrite(D0, LOW); // Turn the LED on
 }
 
-float calculateRollingAverage(int currentSize, int rollingBufferSize, float rollingBuffer[], int currentIndex) {
-  float sum = 0;
-
-  for (size_t i = 0; i < currentSize; i++) {
-    int index = (rollingBufferSize + currentIndex - i) % rollingBufferSize;
-    sum += rollingBuffer[index];
-  }
-
-  return sum / currentSize;
-}
-
-float handleNewSensorValue(float sensorValue, float buffer[], int *bufferCurrentSize, int *bufferCurrentIndex, int bufferTotalSize, int sendFrequency, const char* mqttTopic, boolean retained) {
-  if (*bufferCurrentSize < bufferTotalSize) {
-    *bufferCurrentSize += 1;
-  }
-
-  /*
-  Serial.print("current Index: ");
-  Serial.print(*bufferCurrentIndex);
-  Serial.print(" size: ");
-  Serial.print(*bufferCurrentSize);
-  Serial.print(" total: ");
-  Serial.println(bufferTotalSize);
-  /**/
-
-  buffer[*bufferCurrentIndex] = sensorValue;
-  float avg = calculateRollingAverage(*bufferCurrentSize, bufferTotalSize, buffer, *bufferCurrentIndex);
-
-  if (*bufferCurrentIndex % sendFrequency == sendFrequency - 1) {
-    Serial.print("publish ");
-    Serial.print(mqttTopic);
-    Serial.print(" ");
-    Serial.print(avg);
-    Serial.print(" retained: ");
-    Serial.println(retained);
-    client.publish(mqttTopic, String(avg).c_str(), retained);
-  }
-
-  *bufferCurrentIndex += 1;
-  *bufferCurrentIndex %= bufferTotalSize;
-
-  return avg;
+void publish(const char* mqttTopic, float value, boolean retained) {
+  Serial.print("publish ");
+  Serial.print(mqttTopic);
+  Serial.print(" ");
+  Serial.print(value);
+  Serial.print(" retained: ");
+  Serial.println(retained);
+  client.publish(mqttTopic, String(value).c_str(), retained);
 }
 
 void loop() {
@@ -188,10 +148,10 @@ void loop() {
   delay(1000);
 
   currentCycle++;
-  if (currentCycle < 5) {
+  currentCycle %= MAX_CYCLES * SECONDS_BETWEEN_MEASURE;
+  if (currentCycle % SECONDS_BETWEEN_MEASURE > 0) {
     return;
   }
-  currentCycle = 0;
 
   // Read temperature as Celsius (the default)
   float t = dht.getTemperature();
@@ -210,13 +170,19 @@ void loop() {
   }
 
   if (readSuccessful) {
-    float avgT = handleNewSensorValue(t, rollingBufferTemperature, &rollingBufferTempCurrentSize, &rollingBufferTempCurrentIndex, ROLLING_AVERAGE_BUFFER_SIZE_TEMP, SEND_EVERY_TEMP, MQTT_TOPIC_SENSOR "/temp", MQTT_RETAINED);
+    float avgT = kalmanTemp.updateEstimate(t);
+    if ((currentCycle % (SEND_EVERY_TEMP * SECONDS_BETWEEN_MEASURE)) == 0) {
+      publish(MQTT_TOPIC_SENSOR "/temp", avgT, MQTT_RETAINED);
+    }
     Serial.print("Temperature in Celsius: ");
     Serial.print(String(t).c_str());
     Serial.print(" Average: ");
     Serial.println(String(avgT).c_str());
 
-    float avgH = handleNewSensorValue(h, rollingBufferHumidity, &rollingBufferHumCurrentSize, &rollingBufferHumCurrentIndex, ROLLING_AVERAGE_BUFFER_SIZE_HUM, SEND_EVERY_HUM, MQTT_TOPIC_SENSOR "/hum", MQTT_RETAINED);
+    float avgH = kalmanHum.updateEstimate(h);
+    if ((currentCycle % (SEND_EVERY_HUM * SECONDS_BETWEEN_MEASURE)) == 0) {
+      publish(MQTT_TOPIC_SENSOR "/hum", avgH, MQTT_RETAINED);
+    }
     Serial.print("Humidity    in Percent: ");
     Serial.print(String(h).c_str());
     Serial.print(" Average: ");
@@ -224,16 +190,13 @@ void loop() {
   } else {
     Serial.print("Failed to read from sensor! ");
     Serial.println(dht.getStatusString());
-    if (rollingBufferTempCurrentSize > 0) {
-      rollingBufferTempCurrentSize--;
-    }
-    if (rollingBufferHumCurrentSize > 0) {
-      rollingBufferHumCurrentSize--;
-    }
   }
 
   long rssi = WiFi.RSSI();
-  float avgRssi = handleNewSensorValue(rssi, rollingBufferRssi, &rollingBufferRssiCurrentSize, &rollingBufferRssiCurrentIndex, ROLLING_AVERAGE_BUFFER_SIZE_RSSI, SEND_EVERY_RSSI, MQTT_TOPIC_SENSOR "/rssi", false);
+  float avgRssi = kalmanRssi.updateEstimate(rssi);
+  if ((currentCycle % (SEND_EVERY_RSSI * SECONDS_BETWEEN_MEASURE)) == 0) {
+    publish(MQTT_TOPIC_SENSOR "/rssi", avgRssi, MQTT_RETAINED);
+  }
   Serial.print("RSSI        in dBm:     ");
   Serial.print(String(rssi).c_str());
   Serial.print("   Average: ");
