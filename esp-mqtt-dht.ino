@@ -36,7 +36,11 @@ void setup() {
   client.setServer(MQTT_SERVER, 1883);
   client.setCallback(callback);
 
-  Serial.print("DHT Sensor type assumed: ");
+  Serial.print("DHT Sensor type");
+  if (DHTTYPE == DHTesp::AUTO_DETECT) {
+    Serial.print(" assumed");
+  }
+  Serial.print(": ");
   if (dht.getModel() == DHTesp::DHT22) {
     Serial.println("DHT22");
   } else if (dht.getModel() == DHTesp::DHT11) {
