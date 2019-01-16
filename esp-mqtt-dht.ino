@@ -6,9 +6,9 @@
 #include <SimpleKalmanFilter.h>
 #include <Wire.h>
 
-SimpleKalmanFilter kalmanTemp(0.5, 10, 0.01);
-SimpleKalmanFilter kalmanHum(0.2, 10, 0.01);
-SimpleKalmanFilter kalmanRssi(1, 10, 0.01);
+SimpleKalmanFilter kalmanTemp(0.2, 100, 0.01);
+SimpleKalmanFilter kalmanHum(2, 100, 0.01);
+SimpleKalmanFilter kalmanRssi(10, 1000, 0.01);
 
 int lastConnected = 0;
 const int SECONDS_BETWEEN_MEASURE = 5;
