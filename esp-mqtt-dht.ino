@@ -6,6 +6,11 @@
 #include <SimpleKalmanFilter.h>
 #include <Wire.h>
 
+String mqttServer;
+String sensorTopic;
+String clientName;
+boolean mqttRetained = false;
+
 SimpleKalmanFilter kalmanTemp(0.2, 100, 0.01);
 SimpleKalmanFilter kalmanHum(2, 100, 0.01);
 SimpleKalmanFilter kalmanRssi(10, 1000, 0.01);
@@ -26,16 +31,39 @@ PubSubClient client(espClient);
 void setup() {
   pinMode(D0, OUTPUT);
   Serial.begin(115200);
-  dht.setup(DHTPIN, DHTTYPE);
+  Serial.println();
+
+  mqttServer = MQTT_SERVER;
+
+  clientName = "esp8266-";
+  clientName += MQTT_DEVICE_TYPE;
+  clientName += "-";
+  clientName += DEVICE_POSITION;
+  clientName += "-";
+  uint8_t mac[6];
+  WiFi.macAddress(mac);
+  clientName += macToStr(mac);
+
+  sensorTopic = MQTT_BASE_TOPIC;
+  sensorTopic += "/status/";
+  sensorTopic += MQTT_DEVICE_TYPE;
+  sensorTopic += "/";
+  sensorTopic += DEVICE_POSITION;
+
+  WiFi.hostname(clientName);
   setup_wifi();
-  client.setServer(MQTT_SERVER, 1883);
+
+  Serial.print("MQTT Server: ");
+  Serial.println(mqttServer);
+  Serial.print("MQTT Topic: ");
+  Serial.println(sensorTopic);
+  Serial.print("MQTT retained: ");
+  Serial.println(mqttRetained ? "true" : "false");
+  client.setServer(mqttServer.c_str(), 1883);
   client.setCallback(callback);
 
-  Serial.print("DHT Sensor type");
-  if (DHTTYPE == DHTesp::AUTO_DETECT) {
-    Serial.print(" assumed");
-  }
-  Serial.print(": ");
+  dht.setup(DHTPIN, IS_DHT11 ? DHTesp::DHT11 : DHTesp::DHT22);
+  Serial.print("DHT Sensor type: ");
   if (dht.getModel() == DHTesp::DHT22) {
     Serial.println("DHT22");
   } else if (dht.getModel() == DHTesp::DHT11) {
@@ -57,14 +85,11 @@ String macToStr(const uint8_t* mac)
 }
 
 void setup_wifi() {
-  delay(10);
   // We start by connecting to a WiFi network
-  Serial.println();
   Serial.print("Connecting to ");
   Serial.println(WIFI_SSID);
 
   WiFi.mode(WIFI_STA);
-  WiFi.hostname("esp-temp-" SENSOR_NAME);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -83,23 +108,10 @@ void reconnect() {
   while (!client.connected()) {
     Serial.println("Attempting MQTT connection...");
 
-    // Generate client name based on MAC address
-    String clientName;
-    clientName += "esp8266-";
-    clientName += SENSOR_NAME "-";
-    uint8_t mac[6];
-    WiFi.macAddress(mac);
-    clientName += macToStr(mac);
-    Serial.print("Connecting to ");
-    Serial.print(MQTT_SERVER);
-    Serial.print(" as ");
-    Serial.println(clientName);
-
-
     // Attempt to connect
-    if (client.connect((char*) clientName.c_str(), MQTT_TOPIC_SENSOR "/connected", 0, MQTT_RETAINED, "0")) {
+    if (client.connect(clientName.c_str(), (sensorTopic + "/connected").c_str(), 0, mqttRetained, "0")) {
       Serial.println("MQTT connected");
-      client.subscribe(MQTT_TOPIC_SENSOR "/identify");
+      client.subscribe(String(sensorTopic + "/identify").c_str());
       Serial.println("MQTT subscribed identify");
     } else {
       Serial.print("failed, rc=");
@@ -163,7 +175,7 @@ void loop() {
     Serial.print(" to ");
     Serial.println(nextConnected);
     lastConnected = nextConnected;
-    client.publish(MQTT_TOPIC_SENSOR "/connected", String(nextConnected).c_str(), MQTT_RETAINED);
+    client.publish((sensorTopic + "/connected").c_str(), String(nextConnected).c_str(), mqttRetained);
   }
 
   if (readSuccessful) {
@@ -171,7 +183,7 @@ void loop() {
     sendTemp++;
     if (sendTemp >= SEND_EVERY_TEMP) {
       sendTemp = 0;
-      publish(MQTT_TOPIC_SENSOR "/temp", avgT, MQTT_RETAINED);
+      publish((sensorTopic + "/temp").c_str(), avgT, mqttRetained);
     }
     Serial.print("Temperature in Celsius: ");
     Serial.print(String(t).c_str());
@@ -182,7 +194,7 @@ void loop() {
     sendHum++;
     if (sendHum >= SEND_EVERY_HUM) {
       sendHum = 0;
-      publish(MQTT_TOPIC_SENSOR "/hum", avgH, MQTT_RETAINED);
+      publish((sensorTopic + "/hum").c_str(), avgH, mqttRetained);
     }
     Serial.print("Humidity    in Percent: ");
     Serial.print(String(h).c_str());
@@ -198,7 +210,7 @@ void loop() {
   sendRssi++;
   if (sendRssi >= SEND_EVERY_RSSI) {
     sendRssi = 0;
-    publish(MQTT_TOPIC_SENSOR "/rssi", avgRssi, MQTT_RETAINED);
+    publish((sensorTopic + "/rssi").c_str(), avgRssi, mqttRetained);
   }
   Serial.print("RSSI        in dBm:     ");
   Serial.print(String(rssi).c_str());

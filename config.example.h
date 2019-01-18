@@ -1,23 +1,16 @@
 #pragma once
 
-#define SENSOR_NAME "bed"
+const String DEVICE_POSITION = "bed";
 
 #define WIFI_SSID "name"
 #define WIFI_PASSWORD "password"
 
-#define MQTT_SERVER "hostname"
-
-#define MQTT_TOPIC_BASE "lightproject/status/temp/"
-#define MQTT_TOPIC_SENSOR MQTT_TOPIC_BASE SENSOR_NAME
-
+const String MQTT_SERVER = "hostname";
+const String MQTT_BASE_TOPIC = "lightproject";
+const String MQTT_DEVICE_TYPE = "temp";
 const boolean MQTT_RETAINED = true;
 
-// Uncomment whatever type you're using!
-// Beware of AUTO_DETECT as it can have different results after each startup (fails or temp is 0 then)
-//#define DHTTYPE DHTesp::AUTO_DETECT
-//#define DHTTYPE DHTesp::DHT11 // DHT 11
-//#define DHTTYPE DHTesp::DHT22 // DHT 22
-
+const boolean IS_DHT11 = false;
 const int DHTPIN = 12; // digital pin of the NodeMCU (D6 in this case)
 
 // hint: 1 measurement every 5 seconds, 12 measurements every minute
