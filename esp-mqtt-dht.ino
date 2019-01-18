@@ -34,6 +34,7 @@ void setup() {
   Serial.println();
 
   mqttServer = MQTT_SERVER;
+  mqttRetained = MQTT_RETAINED;
 
   clientName = "esp8266-";
   clientName += MQTT_DEVICE_TYPE;
