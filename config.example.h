@@ -6,8 +6,6 @@
 #define WIFI_PASSWORD "password"
 
 #define MQTT_SERVER "hostname"
-// #define MQTT_USER "user"
-// #define MQTT_PASSWORD "password"
 
 #define MQTT_TOPIC_BASE "lightproject/status/temp/"
 #define MQTT_TOPIC_SENSOR MQTT_TOPIC_BASE SENSOR_NAME
