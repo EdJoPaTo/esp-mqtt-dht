@@ -6,6 +6,7 @@
 #include <FS.h>
 #include <PubSubClient.h>
 #include <SimpleKalmanFilter.h>
+#include <WiFiManager.h>
 #include <Wire.h>
 
 String mqttServer;
