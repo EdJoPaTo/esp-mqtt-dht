@@ -1,0 +1,7 @@
+{
+  "mqtt_server": "etoPiServer",
+  "mqtt_base_topic": "lightproject",
+  "device_position": "test42",
+  "mqtt_retained": true,
+  "isDHT11": false
+}

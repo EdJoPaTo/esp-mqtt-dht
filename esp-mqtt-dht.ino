@@ -1,7 +1,9 @@
 #include "config.h"
 
+#include <ArduinoJson.h>
 #include <DHTesp.h>
 #include <ESP8266WiFi.h>
+#include <FS.h>
 #include <PubSubClient.h>
 #include <SimpleKalmanFilter.h>
 #include <Wire.h>
@@ -33,22 +35,53 @@ void setup() {
   Serial.begin(115200);
   Serial.println();
 
-  mqttServer = MQTT_SERVER;
+  char mqtt_server[40] = "";
+  char mqtt_base_topic[40] = "lightproject";
+  char device_position[40] = "UNDEFINED";
+  boolean isDHT11 = false;
+  if (SPIFFS.begin()) {
+    // you can push it yourself
+    // see https://github.com/esp8266/arduino-esp8266fs-plugin
+    if (SPIFFS.exists("/config.json")) {
+      File configFile = SPIFFS.open("/config.json", "r");
+      DynamicJsonBuffer jsonBuffer;
+      JsonObject &json = jsonBuffer.parseObject(configFile);
+      if (json.success()) {
+        json.printTo(Serial);
+        Serial.println();
+
+        strcpy(mqtt_server, json["mqtt_server"]);
+        strcpy(mqtt_base_topic, json["mqtt_base_topic"]);
+        strcpy(device_position, json["device_position"]);
+        mqttRetained = (boolean) json["mqtt_retained"];
+        isDHT11 = (boolean) json["isDHT11"];
+      } else {
+        Serial.println("failed to load json config");
+      }
+      configFile.close();
+    } else {
+      Serial.println("Config file does not exist.");
+    }
+  } else {
+    Serial.println("failed to mount FS");
+  }
+
+  mqttServer = mqtt_server;
 
   clientName = "esp8266-";
   clientName += MQTT_DEVICE_TYPE;
   clientName += "-";
-  clientName += DEVICE_POSITION;
+  clientName += device_position;
   clientName += "-";
   uint8_t mac[6];
   WiFi.macAddress(mac);
   clientName += macToStr(mac);
 
-  sensorTopic = MQTT_BASE_TOPIC;
+  sensorTopic = mqtt_base_topic;
   sensorTopic += "/status/";
   sensorTopic += MQTT_DEVICE_TYPE;
   sensorTopic += "/";
-  sensorTopic += DEVICE_POSITION;
+  sensorTopic += device_position;
 
   WiFi.hostname(clientName);
   setup_wifi();
