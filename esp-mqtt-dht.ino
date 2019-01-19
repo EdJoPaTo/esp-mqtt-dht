@@ -6,6 +6,7 @@
 #include <SimpleKalmanFilter.h>
 #include <Wire.h>
 
+String hostname;
 String mqttServer;
 String sensorTopic;
 String clientName;
@@ -36,10 +37,12 @@ void setup() {
   mqttServer = MQTT_SERVER;
   mqttRetained = MQTT_RETAINED;
 
-  clientName = "esp8266-";
-  clientName += MQTT_DEVICE_TYPE;
-  clientName += "-";
-  clientName += DEVICE_POSITION;
+  hostname = "esp-";
+  hostname += MQTT_DEVICE_TYPE;
+  hostname += "-";
+  hostname += DEVICE_POSITION;
+
+  clientName = hostname;
   clientName += "-";
   uint8_t mac[6];
   WiFi.macAddress(mac);
@@ -51,11 +54,15 @@ void setup() {
   sensorTopic += "/";
   sensorTopic += DEVICE_POSITION;
 
-  WiFi.hostname(clientName);
+  WiFi.hostname(hostname);
   setup_wifi();
 
+  Serial.print("Hostname: ");
+  Serial.println(hostname);
   Serial.print("MQTT Server: ");
   Serial.println(mqttServer);
+  Serial.print("Client Name: ");
+  Serial.println(clientName);
   Serial.print("MQTT Topic: ");
   Serial.println(sensorTopic);
   Serial.print("MQTT retained: ");
