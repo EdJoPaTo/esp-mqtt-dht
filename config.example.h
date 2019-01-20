@@ -17,3 +17,6 @@ const int DHTPIN = 12; // digital pin of the NodeMCU (D6 in this case)
 const int SEND_EVERY_TEMP = 12; // send every 60 seconds
 const int SEND_EVERY_HUM = 12 * 5; // send every 5 minutes
 const int SEND_EVERY_RSSI = 12 * 15; // send every 15 minutes
+
+// Enable when you want to see the actual values published over MQTT every 5 seconds after each measurement
+// #define DEBUG_KALMAN

@@ -191,6 +191,10 @@ void loop() {
       sendTemp = 0;
       publish((sensorTopic + "/temp").c_str(), avgT, mqttRetained);
     }
+#ifdef DEBUG_KALMAN
+    publish((sensorTopic + "-orig/temp").c_str(), t, mqttRetained);
+    publish((sensorTopic + "-avg/temp").c_str(), avgT, mqttRetained);
+#endif
     Serial.print("Temperature in Celsius: ");
     Serial.print(String(t).c_str());
     Serial.print(" Average: ");
@@ -202,6 +206,10 @@ void loop() {
       sendHum = 0;
       publish((sensorTopic + "/hum").c_str(), avgH, mqttRetained);
     }
+#ifdef DEBUG_KALMAN
+    publish((sensorTopic + "-orig/hum").c_str(), h, mqttRetained);
+    publish((sensorTopic + "-avg/hum").c_str(), avgH, mqttRetained);
+#endif
     Serial.print("Humidity    in Percent: ");
     Serial.print(String(h).c_str());
     Serial.print(" Average: ");
@@ -218,6 +226,10 @@ void loop() {
     sendRssi = 0;
     publish((sensorTopic + "/rssi").c_str(), avgRssi, mqttRetained);
   }
+#ifdef DEBUG_KALMAN
+  publish((sensorTopic + "-orig/rssi").c_str(), rssi, mqttRetained);
+  publish((sensorTopic + "-avg/rssi").c_str(), avgRssi, mqttRetained);
+#endif
   Serial.print("RSSI        in dBm:     ");
   Serial.print(String(rssi).c_str());
   Serial.print("   Average: ");
