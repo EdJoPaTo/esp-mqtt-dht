@@ -22,6 +22,3 @@ TODO
 
 duplicate the file `config.example.h` in order to create the `config.h` file.
 Use the values you need for your environment.
-
-When your mqtt server uses user/password comment the defines in.
-The rest will use them then.
