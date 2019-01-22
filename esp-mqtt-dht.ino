@@ -37,8 +37,7 @@ void setup() {
   mqttServer = MQTT_SERVER;
   mqttRetained = MQTT_RETAINED;
 
-  hostname = "esp-";
-  hostname += MQTT_DEVICE_TYPE;
+  hostname = MQTT_BASE_TOPIC;
   hostname += "-";
   hostname += DEVICE_POSITION;
 
@@ -50,8 +49,6 @@ void setup() {
 
   sensorTopic = MQTT_BASE_TOPIC;
   sensorTopic += "/status/";
-  sensorTopic += MQTT_DEVICE_TYPE;
-  sensorTopic += "/";
   sensorTopic += DEVICE_POSITION;
 
   WiFi.hostname(hostname);

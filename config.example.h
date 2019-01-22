@@ -6,8 +6,7 @@ const String DEVICE_POSITION = "bed";
 #define WIFI_PASSWORD "password"
 
 const String MQTT_SERVER = "hostname";
-const String MQTT_BASE_TOPIC = "lightproject";
-const String MQTT_DEVICE_TYPE = "temp";
+const String MQTT_BASE_TOPIC = "espDht";
 const boolean MQTT_RETAINED = true;
 
 const boolean IS_DHT11 = false;
