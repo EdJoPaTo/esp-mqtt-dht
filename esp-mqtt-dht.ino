@@ -10,7 +10,6 @@ String hostname;
 String mqttServer;
 String sensorTopic;
 String clientName;
-boolean mqttRetained = false;
 
 SimpleKalmanFilter kalmanTemp(0.2, 100, 0.01);
 SimpleKalmanFilter kalmanHum(2, 100, 0.01);
@@ -35,7 +34,6 @@ void setup() {
   Serial.println();
 
   mqttServer = MQTT_SERVER;
-  mqttRetained = MQTT_RETAINED;
 
   hostname = MQTT_BASE_TOPIC;
   hostname += "-";
@@ -63,7 +61,7 @@ void setup() {
   Serial.print("MQTT Topic: ");
   Serial.println(sensorTopic);
   Serial.print("MQTT retained: ");
-  Serial.println(mqttRetained ? "true" : "false");
+  Serial.println(MQTT_RETAINED ? "true" : "false");
   client.setServer(mqttServer.c_str(), 1883);
   client.setCallback(callback);
 
@@ -112,7 +110,7 @@ void reconnect() {
     Serial.println("Attempting MQTT connection...");
 
     // Attempt to connect
-    if (client.connect(clientName.c_str(), (sensorTopic + "/connected").c_str(), 0, mqttRetained, "0")) {
+    if (client.connect(clientName.c_str(), (sensorTopic + "/connected").c_str(), 0, MQTT_RETAINED, "0")) {
       Serial.println("MQTT connected");
       client.subscribe(String(sensorTopic + "/identify").c_str());
       Serial.println("MQTT subscribed identify");
@@ -178,7 +176,7 @@ void loop() {
     Serial.print(" to ");
     Serial.println(nextConnected);
     lastConnected = nextConnected;
-    client.publish((sensorTopic + "/connected").c_str(), String(nextConnected).c_str(), mqttRetained);
+    client.publish((sensorTopic + "/connected").c_str(), String(nextConnected).c_str(), MQTT_RETAINED);
   }
 
   if (readSuccessful) {
@@ -186,11 +184,11 @@ void loop() {
     sendTemp++;
     if (sendTemp >= SEND_EVERY_TEMP) {
       sendTemp = 0;
-      publish((sensorTopic + "/temp").c_str(), avgT, mqttRetained);
+      publish((sensorTopic + "/temp").c_str(), avgT, MQTT_RETAINED);
     }
 #ifdef DEBUG_KALMAN
-    publish((sensorTopic + "-orig/temp").c_str(), t, mqttRetained);
-    publish((sensorTopic + "-avg/temp").c_str(), avgT, mqttRetained);
+    publish((sensorTopic + "-orig/temp").c_str(), t, MQTT_RETAINED);
+    publish((sensorTopic + "-avg/temp").c_str(), avgT, MQTT_RETAINED);
 #endif
     Serial.print("Temperature in Celsius: ");
     Serial.print(String(t).c_str());
@@ -201,11 +199,11 @@ void loop() {
     sendHum++;
     if (sendHum >= SEND_EVERY_HUM) {
       sendHum = 0;
-      publish((sensorTopic + "/hum").c_str(), avgH, mqttRetained);
+      publish((sensorTopic + "/hum").c_str(), avgH, MQTT_RETAINED);
     }
 #ifdef DEBUG_KALMAN
-    publish((sensorTopic + "-orig/hum").c_str(), h, mqttRetained);
-    publish((sensorTopic + "-avg/hum").c_str(), avgH, mqttRetained);
+    publish((sensorTopic + "-orig/hum").c_str(), h, MQTT_RETAINED);
+    publish((sensorTopic + "-avg/hum").c_str(), avgH, MQTT_RETAINED);
 #endif
     Serial.print("Humidity    in Percent: ");
     Serial.print(String(h).c_str());
@@ -221,11 +219,11 @@ void loop() {
   sendRssi++;
   if (sendRssi >= SEND_EVERY_RSSI) {
     sendRssi = 0;
-    publish((sensorTopic + "/rssi").c_str(), avgRssi, mqttRetained);
+    publish((sensorTopic + "/rssi").c_str(), avgRssi, MQTT_RETAINED);
   }
 #ifdef DEBUG_KALMAN
-  publish((sensorTopic + "-orig/rssi").c_str(), rssi, mqttRetained);
-  publish((sensorTopic + "-avg/rssi").c_str(), avgRssi, mqttRetained);
+  publish((sensorTopic + "-orig/rssi").c_str(), rssi, MQTT_RETAINED);
+  publish((sensorTopic + "-avg/rssi").c_str(), avgRssi, MQTT_RETAINED);
 #endif
   Serial.print("RSSI        in dBm:     ");
   Serial.print(String(rssi).c_str());
