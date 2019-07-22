@@ -17,5 +17,5 @@ const int SEND_EVERY_TEMP = 12 * 2; // send every 2 minutes
 const int SEND_EVERY_HUM = 12 * 5; // send every 5 minutes
 const int SEND_EVERY_RSSI = 12 * 15; // send every 15 minutes
 
-// Enable when you want to see the actual values published over MQTT every 5 seconds after each measurement
+// Enable when you want to see the actual values published over MQTT after each measurement
 // #define DEBUG_KALMAN
