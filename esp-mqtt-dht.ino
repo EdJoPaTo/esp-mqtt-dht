@@ -152,8 +152,8 @@ void loop() {
     reconnect();
   }
 
-  digitalWrite(D0, HIGH); // Turn the LED off by making the voltage HIGH
   client.loop();
+  digitalWrite(D0, HIGH); // Turn the LED off by making the voltage HIGH
 
   delay(1000);
 
