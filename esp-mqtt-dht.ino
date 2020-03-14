@@ -1,15 +1,12 @@
 #include "config.h"
 
 #include <DHTesp.h>
-#include <ESP8266WiFi.h>
-#include <PubSubClient.h>
+#include <EspMQTTClient.h>
 #include <SimpleKalmanFilter.h>
 #include <Wire.h>
 
-String hostname;
-String mqttServer;
-String sensorTopic;
-String clientName;
+#define CLIENT_NAME MQTT_BASE_TOPIC "-" DEVICE_POSITION
+#define SENSOR_TOPIC MQTT_BASE_TOPIC "/status/" DEVICE_POSITION
 
 SimpleKalmanFilter kalmanTemp(0.2, 100, 0.01);
 SimpleKalmanFilter kalmanHum(2, 100, 0.01);
@@ -25,45 +22,33 @@ int sendRssi = 0;
 
 DHTesp dht;
 
-WiFiClient espClient;
-PubSubClient client(espClient);
+#ifdef ESP8266
+  #define LED_BUILTIN_ON LOW
+  #define LED_BUILTIN_OFF HIGH
+#else // for ESP32
+  #define LED_BUILTIN_ON HIGH
+  #define LED_BUILTIN_OFF LOW
+#endif
+
+EspMQTTClient client(
+  WIFI_SSID,
+  WIFI_PASSWORD,
+  MQTT_SERVER,
+  CLIENT_NAME,
+  1883
+);
 
 void setup() {
-  pinMode(D0, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
   Serial.begin(115200);
   Serial.println();
 
-  mqttServer = MQTT_SERVER;
-
-  hostname = MQTT_BASE_TOPIC;
-  hostname += "-";
-  hostname += DEVICE_POSITION;
-
-  clientName = hostname;
-  clientName += "-";
-  uint8_t mac[6];
-  WiFi.macAddress(mac);
-  clientName += macToStr(mac);
-
-  sensorTopic = MQTT_BASE_TOPIC;
-  sensorTopic += "/status/";
-  sensorTopic += DEVICE_POSITION;
-
-  WiFi.hostname(hostname);
-  setup_wifi();
-
-  Serial.print("Hostname: ");
-  Serial.println(hostname);
-  Serial.print("MQTT Server: ");
-  Serial.println(mqttServer);
   Serial.print("Client Name: ");
-  Serial.println(clientName);
+  Serial.println(CLIENT_NAME);
   Serial.print("MQTT Topic: ");
-  Serial.println(sensorTopic);
+  Serial.println(SENSOR_TOPIC);
   Serial.print("MQTT retained: ");
   Serial.println(MQTT_RETAINED ? "true" : "false");
-  client.setServer(mqttServer.c_str(), 1883);
-  client.setCallback(callback);
 
   dht.setup(DHTPIN, IS_DHT11 ? DHTesp::DHT11 : DHTesp::DHT22);
   Serial.print("DHT Sensor type: ");
@@ -74,86 +59,39 @@ void setup() {
   } else {
     Serial.println(dht.getModel());
   }
+
+  // Optional functionnalities of EspMQTTClient
+  client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
+  client.enableLastWillMessage(SENSOR_TOPIC "/connected", "0", MQTT_RETAINED);  // You can activate the retain flag by setting the third parameter to true
 }
 
-String macToStr(const uint8_t* mac)
-{
-  String result;
-  for (int i = 3; i < 6; ++i) {
-    result += String(mac[i], 16);
-  }
-  return result;
+void onConnectionEstablished() {
+  client.subscribe(SENSOR_TOPIC "/identify", [](const String & payload) {
+    digitalWrite(LED_BUILTIN, LED_BUILTIN_ON); // Turn the LED on
+  });
+
+  client.publish(SENSOR_TOPIC "/connected", "1", MQTT_RETAINED);
+  digitalWrite(LED_BUILTIN, LED_BUILTIN_OFF);
+  lastConnected = 1;
 }
 
-void setup_wifi() {
-  // We start by connecting to a WiFi network
-  Serial.print("Connecting to ");
-  Serial.println(WIFI_SSID);
-
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
-}
-
-void reconnect() {
-  // Loop until we're reconnected
-  while (!client.connected()) {
-    Serial.println("Attempting MQTT connection...");
-
-    // Attempt to connect
-    if (client.connect(clientName.c_str(), (sensorTopic + "/connected").c_str(), 0, MQTT_RETAINED, "0")) {
-      Serial.println("MQTT connected");
-      client.subscribe(String(sensorTopic + "/identify").c_str());
-      Serial.println("MQTT subscribed identify");
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-      // Wait 5 seconds before retrying
-      delay(5000);
-    }
-  }
-}
-
-void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
-  for (unsigned int i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
-  }
-  Serial.println();
-
-  digitalWrite(D0, LOW); // Turn the LED on
-}
-
-void publish(const char* mqttTopic, float value, boolean retained) {
+void publish(const String &mqttTopic, float value, boolean retained) {
   Serial.print("publish ");
   Serial.print(mqttTopic);
   Serial.print(" ");
   Serial.print(value);
   Serial.print(" retained: ");
   Serial.println(retained);
-  client.publish(mqttTopic, String(value).c_str(), retained);
+  client.publish(mqttTopic, String(value), retained);
 }
 
 void loop() {
-  if (!client.connected()) {
+  if (!client.isConnected()) {
     lastConnected = 0;
-    reconnect();
+    digitalWrite(LED_BUILTIN, LED_BUILTIN_ON);
   }
 
   client.loop();
-  digitalWrite(D0, HIGH); // Turn the LED off by making the voltage HIGH
 
   delay(1000);
 
@@ -176,7 +114,7 @@ void loop() {
     Serial.print(" to ");
     Serial.println(nextConnected);
     lastConnected = nextConnected;
-    client.publish((sensorTopic + "/connected").c_str(), String(nextConnected).c_str(), MQTT_RETAINED);
+    client.publish(SENSOR_TOPIC "/connected", String(nextConnected), MQTT_RETAINED);
   }
 
   if (readSuccessful) {
@@ -184,11 +122,11 @@ void loop() {
     sendTemp++;
     if (sendTemp >= SEND_EVERY_TEMP) {
       sendTemp = 0;
-      publish((sensorTopic + "/temp").c_str(), avgT, MQTT_RETAINED);
+      publish(SENSOR_TOPIC "/temp", avgT, MQTT_RETAINED);
     }
 #ifdef DEBUG_KALMAN
-    publish((sensorTopic + "-orig/temp").c_str(), t, MQTT_RETAINED);
-    publish((sensorTopic + "-avg/temp").c_str(), avgT, MQTT_RETAINED);
+    publish(SENSOR_TOPIC "-orig/temp", t, MQTT_RETAINED);
+    publish(SENSOR_TOPIC "-avg/temp", avgT, MQTT_RETAINED);
 #endif
     Serial.print("Temperature in Celsius: ");
     Serial.print(String(t).c_str());
@@ -199,11 +137,11 @@ void loop() {
     sendHum++;
     if (sendHum >= SEND_EVERY_HUM) {
       sendHum = 0;
-      publish((sensorTopic + "/hum").c_str(), avgH, MQTT_RETAINED);
+      publish(SENSOR_TOPIC "/hum", avgH, MQTT_RETAINED);
     }
 #ifdef DEBUG_KALMAN
-    publish((sensorTopic + "-orig/hum").c_str(), h, MQTT_RETAINED);
-    publish((sensorTopic + "-avg/hum").c_str(), avgH, MQTT_RETAINED);
+    publish(SENSOR_TOPIC "-orig/hum", h, MQTT_RETAINED);
+    publish(SENSOR_TOPIC "-avg/hum", avgH, MQTT_RETAINED);
 #endif
     Serial.print("Humidity    in Percent: ");
     Serial.print(String(h).c_str());
@@ -219,11 +157,11 @@ void loop() {
   sendRssi++;
   if (sendRssi >= SEND_EVERY_RSSI) {
     sendRssi = 0;
-    publish((sensorTopic + "/rssi").c_str(), avgRssi, MQTT_RETAINED);
+    publish(SENSOR_TOPIC "/rssi", avgRssi, MQTT_RETAINED);
   }
 #ifdef DEBUG_KALMAN
-  publish((sensorTopic + "-orig/rssi").c_str(), rssi, MQTT_RETAINED);
-  publish((sensorTopic + "-avg/rssi").c_str(), avgRssi, MQTT_RETAINED);
+  publish(SENSOR_TOPIC "-orig/rssi", rssi, MQTT_RETAINED);
+  publish(SENSOR_TOPIC "-avg/rssi", avgRssi, MQTT_RETAINED);
 #endif
   Serial.print("RSSI        in dBm:     ");
   Serial.print(String(rssi).c_str());

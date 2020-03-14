@@ -1,12 +1,12 @@
 #pragma once
 
-const String DEVICE_POSITION = "bed";
+#define DEVICE_POSITION "bed"
 
 #define WIFI_SSID "name"
 #define WIFI_PASSWORD "password"
 
-const String MQTT_SERVER = "hostname";
-const String MQTT_BASE_TOPIC = "espDht";
+#define MQTT_SERVER "hostname"
+#define MQTT_BASE_TOPIC "espDht"
 const boolean MQTT_RETAINED = true;
 
 const boolean IS_DHT11 = false;
