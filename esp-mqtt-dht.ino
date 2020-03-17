@@ -5,20 +5,14 @@
 #include <SimpleKalmanFilter.h>
 #include <Wire.h>
 
+#include "MqttKalmanPublish.h"
+
 #define CLIENT_NAME MQTT_BASE_TOPIC "-" DEVICE_POSITION
 #define SENSOR_TOPIC MQTT_BASE_TOPIC "/status/" DEVICE_POSITION
-
-SimpleKalmanFilter kalmanTemp(0.2, 100, 0.01);
-SimpleKalmanFilter kalmanHum(2, 100, 0.01);
-SimpleKalmanFilter kalmanRssi(10, 1000, 0.01);
 
 int lastConnected = 0;
 const int SECONDS_BETWEEN_MEASURE = 5;
 int currentCycle = 0;
-
-int sendTemp = 0;
-int sendHum = 0;
-int sendRssi = 0;
 
 DHTesp dht;
 
@@ -37,6 +31,10 @@ EspMQTTClient client(
   CLIENT_NAME,
   1883
 );
+
+MQTTKalmanPublish mkTemp(client, SENSOR_TOPIC "/temp", MQTT_RETAINED, 0.2, SEND_EVERY_TEMP);
+MQTTKalmanPublish mkHum(client, SENSOR_TOPIC "/hum", MQTT_RETAINED, 2, SEND_EVERY_HUM);
+MQTTKalmanPublish mkRssi(client, SENSOR_TOPIC "/rssi", MQTT_RETAINED, 10, SEND_EVERY_RSSI);
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
@@ -75,16 +73,6 @@ void onConnectionEstablished() {
   lastConnected = 1;
 }
 
-void publish(const String &mqttTopic, float value, boolean retained) {
-  Serial.print("publish ");
-  Serial.print(mqttTopic);
-  Serial.print(" ");
-  Serial.print(value);
-  Serial.print(" retained: ");
-  Serial.println(retained);
-  client.publish(mqttTopic, String(value), retained);
-}
-
 void loop() {
   if (!client.isConnected()) {
     lastConnected = 0;
@@ -118,30 +106,20 @@ void loop() {
   }
 
   if (readSuccessful) {
-    float avgT = kalmanTemp.updateEstimate(t);
-    sendTemp++;
-    if (sendTemp >= SEND_EVERY_TEMP) {
-      sendTemp = 0;
-      publish(SENSOR_TOPIC "/temp", avgT, MQTT_RETAINED);
-    }
+    float avgT = mkTemp.addMeasurement(t);
 #ifdef DEBUG_KALMAN
-    publish(SENSOR_TOPIC "-orig/temp", t, MQTT_RETAINED);
-    publish(SENSOR_TOPIC "-avg/temp", avgT, MQTT_RETAINED);
+    client.publish(SENSOR_TOPIC "-orig/temp", String(t), MQTT_RETAINED);
+    client.publish(SENSOR_TOPIC "-avg/temp", String(avgT), MQTT_RETAINED);
 #endif
     Serial.print("Temperature in Celsius: ");
     Serial.print(String(t).c_str());
     Serial.print(" Average: ");
     Serial.println(String(avgT).c_str());
 
-    float avgH = kalmanHum.updateEstimate(h);
-    sendHum++;
-    if (sendHum >= SEND_EVERY_HUM) {
-      sendHum = 0;
-      publish(SENSOR_TOPIC "/hum", avgH, MQTT_RETAINED);
-    }
+    float avgH = mkHum.addMeasurement(h);
 #ifdef DEBUG_KALMAN
-    publish(SENSOR_TOPIC "-orig/hum", h, MQTT_RETAINED);
-    publish(SENSOR_TOPIC "-avg/hum", avgH, MQTT_RETAINED);
+    client.publish(SENSOR_TOPIC "-orig/hum", String(h), MQTT_RETAINED);
+    client.publish(SENSOR_TOPIC "-avg/hum", String(avgH), MQTT_RETAINED);
 #endif
     Serial.print("Humidity    in Percent: ");
     Serial.print(String(h).c_str());
@@ -153,15 +131,10 @@ void loop() {
   }
 
   long rssi = WiFi.RSSI();
-  float avgRssi = kalmanRssi.updateEstimate(rssi);
-  sendRssi++;
-  if (sendRssi >= SEND_EVERY_RSSI) {
-    sendRssi = 0;
-    publish(SENSOR_TOPIC "/rssi", avgRssi, MQTT_RETAINED);
-  }
+  float avgRssi = mkRssi.addMeasurement(rssi);
 #ifdef DEBUG_KALMAN
-  publish(SENSOR_TOPIC "-orig/rssi", rssi, MQTT_RETAINED);
-  publish(SENSOR_TOPIC "-avg/rssi", avgRssi, MQTT_RETAINED);
+  client.publish(SENSOR_TOPIC "-orig/rssi", String(rssi), MQTT_RETAINED);
+  client.publish(SENSOR_TOPIC "-avg/rssi", String(avgRssi), MQTT_RETAINED);
 #endif
   Serial.print("RSSI        in dBm:     ");
   Serial.print(String(rssi).c_str());
