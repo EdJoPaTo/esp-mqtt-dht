@@ -7,8 +7,7 @@
 
 #include "MqttKalmanPublish.h"
 
-#define CLIENT_NAME MQTT_BASE_TOPIC "-" DEVICE_POSITION
-#define SENSOR_TOPIC MQTT_BASE_TOPIC "/status/" DEVICE_POSITION
+#define SENSOR_TOPIC MQTT_BASE_TOPIC "/status"
 
 int lastConnected = 0;
 const int SECONDS_BETWEEN_MEASURE = 5;
@@ -28,7 +27,7 @@ EspMQTTClient client(
   WIFI_SSID,
   WIFI_PASSWORD,
   MQTT_SERVER,
-  CLIENT_NAME,
+  MQTT_BASE_TOPIC,
   1883
 );
 
@@ -41,10 +40,8 @@ void setup() {
   Serial.begin(115200);
   Serial.println();
 
-  Serial.print("Client Name: ");
-  Serial.println(CLIENT_NAME);
-  Serial.print("MQTT Topic: ");
-  Serial.println(SENSOR_TOPIC);
+  Serial.print("MQTT Base Topic: ");
+  Serial.println(MQTT_BASE_TOPIC);
   Serial.print("MQTT retained: ");
   Serial.println(MQTT_RETAINED ? "true" : "false");
 

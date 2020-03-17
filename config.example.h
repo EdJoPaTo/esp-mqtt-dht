@@ -1,12 +1,10 @@
 #pragma once
 
-#define DEVICE_POSITION "bed"
-
 #define WIFI_SSID "name"
 #define WIFI_PASSWORD "password"
 
 #define MQTT_SERVER "hostname"
-#define MQTT_BASE_TOPIC "espDht"
+#define MQTT_BASE_TOPIC "espDht-bed"
 const boolean MQTT_RETAINED = true;
 
 const boolean IS_DHT11 = false;
