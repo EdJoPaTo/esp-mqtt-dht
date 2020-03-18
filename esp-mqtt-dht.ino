@@ -11,6 +11,8 @@
 
 int lastConnected = 0;
 const int SECONDS_BETWEEN_MEASURE = 5;
+const int MQTT_UPDATES_PER_SECOND = 1;
+const int INTERVALS = SECONDS_BETWEEN_MEASURE * MQTT_UPDATES_PER_SECOND;
 int currentCycle = 0;
 
 DHTesp dht;
@@ -78,10 +80,10 @@ void loop() {
 
   client.loop();
 
-  delay(1000);
+  delay(1000 / MQTT_UPDATES_PER_SECOND);
 
   currentCycle++;
-  if (currentCycle < SECONDS_BETWEEN_MEASURE) {
+  if (currentCycle < INTERVALS) {
     return;
   }
   currentCycle = 0;
