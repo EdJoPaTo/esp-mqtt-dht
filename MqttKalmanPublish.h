@@ -24,4 +24,5 @@ public:
     );
 
     float addMeasurement(float value);
+    void restart();
 };

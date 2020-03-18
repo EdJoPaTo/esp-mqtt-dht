@@ -1,5 +1,8 @@
 #include "MqttKalmanPublish.h"
 
+const float INITIAL_ESTIMATION_ERROR = 1000;
+const float INITIAL_Q = 0.02;
+
 MQTTKalmanPublish::MQTTKalmanPublish(
     EspMQTTClient& client,
     const char* topic,
@@ -11,7 +14,7 @@ MQTTKalmanPublish::MQTTKalmanPublish(
     topic(topic),
     retained(retained),
     sendEveryN(sendEveryN),
-    kalman(kalmanSensitivity, 1000, 0.01)
+    kalman(kalmanSensitivity, INITIAL_ESTIMATION_ERROR, INITIAL_Q)
 { }
 
 float MQTTKalmanPublish::addMeasurement(float value) {
@@ -24,4 +27,9 @@ float MQTTKalmanPublish::addMeasurement(float value) {
     }
 
     return estimate;
+}
+
+void MQTTKalmanPublish::restart() {
+    kalman.setEstimateError(INITIAL_ESTIMATION_ERROR);
+    currentCount = 0;
 }
