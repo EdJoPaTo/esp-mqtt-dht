@@ -8,6 +8,7 @@
 #include "MqttKalmanPublish.h"
 
 #define SENSOR_TOPIC MQTT_BASE_TOPIC "/status"
+#define SENSOR_SET_TOPIC MQTT_BASE_TOPIC "/set"
 
 int lastConnected = 0;
 const int SECONDS_BETWEEN_MEASURE = 5;
@@ -63,7 +64,7 @@ void setup() {
 }
 
 void onConnectionEstablished() {
-  client.subscribe(SENSOR_TOPIC "/identify", [](const String & payload) {
+  client.subscribe(SENSOR_SET_TOPIC "/identify", [](const String & payload) {
     digitalWrite(LED_BUILTIN, LED_BUILTIN_ON); // Turn the LED on
   });
 
