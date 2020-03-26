@@ -60,7 +60,7 @@ void setup() {
 
   // Optional functionnalities of EspMQTTClient
   client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
-  client.enableLastWillMessage(SENSOR_TOPIC "/connected", "0", MQTT_RETAINED);  // You can activate the retain flag by setting the third parameter to true
+  client.enableLastWillMessage(MQTT_BASE_TOPIC "/connected", "0", MQTT_RETAINED);  // You can activate the retain flag by setting the third parameter to true
 }
 
 void onConnectionEstablished() {
@@ -68,7 +68,7 @@ void onConnectionEstablished() {
     digitalWrite(LED_BUILTIN, LED_BUILTIN_ON); // Turn the LED on
   });
 
-  client.publish(SENSOR_TOPIC "/connected", "1", MQTT_RETAINED);
+  client.publish(MQTT_BASE_TOPIC "/connected", "1", MQTT_RETAINED);
   digitalWrite(LED_BUILTIN, LED_BUILTIN_OFF);
   lastConnected = 1;
 }
@@ -103,7 +103,7 @@ void loop() {
     Serial.print(" to ");
     Serial.println(nextConnected);
     lastConnected = nextConnected;
-    client.publish(SENSOR_TOPIC "/connected", String(nextConnected), MQTT_RETAINED);
+    client.publish(MQTT_BASE_TOPIC "/connected", String(nextConnected), MQTT_RETAINED);
   }
 
   if (readSuccessful) {
