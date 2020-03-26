@@ -80,6 +80,7 @@ void loop() {
   }
 
   client.loop();
+  digitalWrite(LED_BUILTIN, client.isConnected() ? LED_BUILTIN_OFF : LED_BUILTIN_OFF);
 
   delay(1000 / MQTT_UPDATES_PER_SECOND);
 
