@@ -94,15 +94,16 @@ void loop() {
   float h = dht.getHumidity();
 
   boolean readSuccessful = dht.getStatus() == DHTesp::ERROR_NONE;
-  int nextConnected = readSuccessful ? 2 : 1;
-
-  if (nextConnected != lastConnected) {
-    Serial.print("set /connected from ");
-    Serial.print(lastConnected);
-    Serial.print(" to ");
-    Serial.println(nextConnected);
-    lastConnected = nextConnected;
-    client.publish(MQTT_BASE_TOPIC "/connected", String(nextConnected), MQTT_RETAINED);
+  if (client.isConnected()) {
+    int nextConnected = readSuccessful ? 2 : 1;
+    if (nextConnected != lastConnected) {
+      Serial.print("set /connected from ");
+      Serial.print(lastConnected);
+      Serial.print(" to ");
+      Serial.println(nextConnected);
+      lastConnected = nextConnected;
+      client.publish(MQTT_BASE_TOPIC "/connected", String(nextConnected), MQTT_RETAINED);
+    }
   }
 
   if (readSuccessful) {
