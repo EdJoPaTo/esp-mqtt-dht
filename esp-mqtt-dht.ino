@@ -76,11 +76,10 @@ void onConnectionEstablished() {
 void loop() {
   if (!client.isConnected()) {
     lastConnected = 0;
-    digitalWrite(LED_BUILTIN, LED_BUILTIN_ON);
   }
 
   client.loop();
-  digitalWrite(LED_BUILTIN, client.isConnected() ? LED_BUILTIN_OFF : LED_BUILTIN_OFF);
+  digitalWrite(LED_BUILTIN, client.isConnected() ? LED_BUILTIN_OFF : LED_BUILTIN_ON);
 
   delay(1000 / MQTT_UPDATES_PER_SECOND);
 
