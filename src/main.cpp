@@ -2,10 +2,8 @@
 
 #include <DHTesp.h>
 #include <EspMQTTClient.h>
-#include <SimpleKalmanFilter.h>
+#include <MqttKalmanPublish.h>
 #include <Wire.h>
-
-#include "MqttKalmanPublish.h"
 
 #define SENSOR_TOPIC MQTT_BASE_TOPIC "/status"
 #define SENSOR_SET_TOPIC MQTT_BASE_TOPIC "/set"
@@ -34,9 +32,9 @@ EspMQTTClient client(
   1883
 );
 
-MQTTKalmanPublish mkTemp(client, SENSOR_TOPIC "/temp", MQTT_RETAINED, 0.2, SEND_EVERY_TEMP);
-MQTTKalmanPublish mkHum(client, SENSOR_TOPIC "/hum", MQTT_RETAINED, 2, SEND_EVERY_HUM);
-MQTTKalmanPublish mkRssi(client, SENSOR_TOPIC "/rssi", MQTT_RETAINED, 10, SEND_EVERY_RSSI);
+MQTTKalmanPublish mkTemp(client, SENSOR_TOPIC "/temp", MQTT_RETAINED, SEND_EVERY_TEMP, 0.2);
+MQTTKalmanPublish mkHum(client, SENSOR_TOPIC "/hum", MQTT_RETAINED, SEND_EVERY_HUM, 2);
+MQTTKalmanPublish mkRssi(client, SENSOR_TOPIC "/rssi", MQTT_RETAINED, SEND_EVERY_RSSI, 10);
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);

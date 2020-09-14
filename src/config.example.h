@@ -5,9 +5,9 @@
 
 #define MQTT_SERVER "hostname"
 #define MQTT_BASE_TOPIC "espDht-bed"
-const boolean MQTT_RETAINED = true;
+const bool MQTT_RETAINED = true;
 
-const boolean IS_DHT11 = false;
+const bool IS_DHT11 = false;
 const int DHTPIN = 12; // digital pin of the NodeMCU (D6 in this case)
 
 // hint: 1 measurement every 5 seconds, 12 measurements every minute
