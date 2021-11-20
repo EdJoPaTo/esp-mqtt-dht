@@ -7,18 +7,28 @@ The basic source code was inspired by this [repo](https://github.com/titusece/ES
 
 ## Installation
 
-In order to build this the arduino tool was used.
+In order to build this the Arduino tool was used.
 
 ### MQTT Server
 
-As an mqtt server I use a Raspberry Pi with mosquitto.
-It is in the debian (so also in the raspbian) repository and can easily be installed: `sudo apt install mosquitto`.
+As an MQTT server I use a Raspberry Pi with `mosquitto`.
+It is in the Debian repository (which includes Raspberry Pi OS) and can easily be installed: `sudo apt install mosquitto`.
+
+Make sure to allow anonymous (and enable the default listener on 1883 if you also want web socket support)
+
+```conf
+listener 1883
+
+allow_anonymous true
+```
 
 ### Prepare Arduino
 
-TODO
+Set the following under File → Preferences → Settings → Additional Board Manager Urls (hit the rightmost button to open the Window):
 
-### Adapt for yourself
+```plaintext
+https://arduino.esp8266.com/stable/package_esp8266com_index.json
+https://dl.espressif.com/dl/package_esp32_index.json
+```
 
-duplicate the file `config.example.h` in order to create the `config.h` file.
-Use the values you need for your environment.
+Next Steps… TODO

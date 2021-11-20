@@ -1,9 +1,26 @@
-#include "config.h"
-
+#include <credentials.h>
 #include <DHTesp.h>
 #include <EspMQTTClient.h>
 #include <MqttKalmanPublish.h>
 #include <Wire.h>
+
+#define MQTT_BASE_TOPIC "espDht-location"
+const bool MQTT_RETAINED = true;
+const bool IS_DHT11 = false;
+
+#ifdef ESP8266
+  const int DHTPIN = 12; // digital pin of the NodeMCU v2 (D6 in this case)
+#else // for ESP32
+  const int DHTPIN = 15; // digital pin of the NodeMCU ESP32 (D15 in this case)
+#endif
+
+// hint: 1 measurement every 5 seconds, 12 measurements every minute
+const int SEND_EVERY_TEMP = 12 * 2; // send every 2 minutes
+const int SEND_EVERY_HUM = 12 * 5; // send every 5 minutes
+const int SEND_EVERY_RSSI = 12 * 5; // send every 5 minutes
+
+// Enable when you want to see the actual values published over MQTT after each measurement
+// #define DEBUG_KALMAN
 
 #define SENSOR_TOPIC MQTT_BASE_TOPIC "/status"
 #define SENSOR_SET_TOPIC MQTT_BASE_TOPIC "/set"
@@ -56,9 +73,9 @@ void setup() {
     Serial.println(dht.getModel());
   }
 
-  // Optional functionnalities of EspMQTTClient
-  client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
-  client.enableLastWillMessage(MQTT_BASE_TOPIC "/connected", "0", MQTT_RETAINED);  // You can activate the retain flag by setting the third parameter to true
+  client.enableDebuggingMessages();
+  client.enableHTTPWebUpdater();
+  client.enableLastWillMessage(MQTT_BASE_TOPIC "/connected", "0", MQTT_RETAINED);
 }
 
 void onConnectionEstablished() {
@@ -66,16 +83,11 @@ void onConnectionEstablished() {
     digitalWrite(LED_BUILTIN, LED_BUILTIN_ON); // Turn the LED on
   });
 
-  client.publish(MQTT_BASE_TOPIC "/connected", "1", MQTT_RETAINED);
-  digitalWrite(LED_BUILTIN, LED_BUILTIN_OFF);
   lastConnected = 1;
+  client.publish(MQTT_BASE_TOPIC "/connected", String(lastConnected), MQTT_RETAINED);
 }
 
 void loop() {
-  if (!client.isConnected()) {
-    lastConnected = 0;
-  }
-
   client.loop();
   digitalWrite(LED_BUILTIN, client.isConnected() ? LED_BUILTIN_OFF : LED_BUILTIN_ON);
 
