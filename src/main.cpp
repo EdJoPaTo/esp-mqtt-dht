@@ -108,10 +108,7 @@ void loop() {
   if (client.isConnected()) {
     int nextConnected = readSuccessful ? 2 : 1;
     if (nextConnected != lastConnected) {
-      Serial.print("set /connected from ");
-      Serial.print(lastConnected);
-      Serial.print(" to ");
-      Serial.println(nextConnected);
+      Serial.printf("set /connected from %d to %d\n", lastConnected, nextConnected);
       lastConnected = nextConnected;
       client.publish(MQTT_BASE_TOPIC "/connected", String(nextConnected), MQTT_RETAINED);
     }
@@ -123,20 +120,14 @@ void loop() {
     client.publish(SENSOR_TOPIC "-orig/temp", String(t), MQTT_RETAINED);
     client.publish(SENSOR_TOPIC "-avg/temp", String(avgT), MQTT_RETAINED);
 #endif
-    Serial.print("Temperature in Celsius: ");
-    Serial.print(String(t).c_str());
-    Serial.print(" Average: ");
-    Serial.println(String(avgT).c_str());
+    Serial.printf("Temperature in Celsius: %5.1f Average: %6.2f\n", t, avgT);
 
     float avgH = mkHum.addMeasurement(h);
 #ifdef DEBUG_KALMAN
     client.publish(SENSOR_TOPIC "-orig/hum", String(h), MQTT_RETAINED);
     client.publish(SENSOR_TOPIC "-avg/hum", String(avgH), MQTT_RETAINED);
 #endif
-    Serial.print("Humidity    in Percent: ");
-    Serial.print(String(h).c_str());
-    Serial.print(" Average: ");
-    Serial.println(String(avgH).c_str());
+    Serial.printf("Humidity    in Percent: %5.1f Average: %6.2f\n", h, avgH);
   } else {
     Serial.print("Failed to read from sensor! ");
     Serial.println(dht.getStatusString());
@@ -148,8 +139,5 @@ void loop() {
   client.publish(SENSOR_TOPIC "-orig/rssi", String(rssi), MQTT_RETAINED);
   client.publish(SENSOR_TOPIC "-avg/rssi", String(avgRssi), MQTT_RETAINED);
 #endif
-  Serial.print("RSSI        in dBm:     ");
-  Serial.print(String(rssi).c_str());
-  Serial.print("   Average: ");
-  Serial.println(String(avgRssi).c_str());
+  Serial.printf("RSSI        in     dBm: %3ld   Average: %6.2f\n", rssi, avgRssi);
 }
