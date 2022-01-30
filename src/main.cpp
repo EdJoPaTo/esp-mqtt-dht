@@ -84,6 +84,7 @@ void onConnectionEstablished() {
     digitalWrite(LED_BUILTIN, LED_BUILTIN_ON); // Turn the LED on
   });
 
+  client.publish(MQTT_BASE_TOPIC "/git-version", GIT_VERSION, MQTT_RETAINED);
   lastConnected = 1;
   client.publish(MQTT_BASE_TOPIC "/connected", String(lastConnected), MQTT_RETAINED);
 }
