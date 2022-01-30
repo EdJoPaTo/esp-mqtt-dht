@@ -4,7 +4,7 @@
 #include <MqttKalmanPublish.h>
 #include <Wire.h>
 
-#define MQTT_BASE_TOPIC "espDht-location"
+#define CLIENT_NAME "espDht-location"
 const bool MQTT_RETAINED = true;
 const bool IS_DHT11 = false;
 
@@ -22,8 +22,9 @@ const int SEND_EVERY_RSSI = 12 * 5; // send every 5 minutes
 // Enable when you want to see the actual values published over MQTT after each measurement
 // #define DEBUG_KALMAN
 
-#define SENSOR_TOPIC MQTT_BASE_TOPIC "/status"
-#define SENSOR_SET_TOPIC MQTT_BASE_TOPIC "/set"
+#define BASE_TOPIC CLIENT_NAME "/"
+#define BASE_TOPIC_STATUS BASE_TOPIC "status/"
+#define BASE_TOPIC_SET BASE_TOPIC "set/"
 
 int lastConnected = 0;
 const int SECONDS_BETWEEN_MEASURE = 5;
@@ -45,21 +46,23 @@ EspMQTTClient client(
   WIFI_SSID,
   WIFI_PASSWORD,
   MQTT_SERVER,
-  MQTT_BASE_TOPIC,
+  MQTT_USERNAME,
+  MQTT_PASSWORD,
+  CLIENT_NAME,
   1883
 );
 
-MQTTKalmanPublish mkTemp(client, SENSOR_TOPIC "/temp", MQTT_RETAINED, SEND_EVERY_TEMP, 0.2);
-MQTTKalmanPublish mkHum(client, SENSOR_TOPIC "/hum", MQTT_RETAINED, SEND_EVERY_HUM, 2);
-MQTTKalmanPublish mkRssi(client, SENSOR_TOPIC "/rssi", MQTT_RETAINED, SEND_EVERY_RSSI, 10);
+MQTTKalmanPublish mkTemp(client, BASE_TOPIC_STATUS "temp", MQTT_RETAINED, SEND_EVERY_TEMP, 0.2);
+MQTTKalmanPublish mkHum(client, BASE_TOPIC_STATUS "hum", MQTT_RETAINED, SEND_EVERY_HUM, 2);
+MQTTKalmanPublish mkRssi(client, BASE_TOPIC_STATUS "rssi", MQTT_RETAINED, SEND_EVERY_RSSI, 10);
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   Serial.begin(115200);
   Serial.println();
 
-  Serial.print("MQTT Base Topic: ");
-  Serial.println(MQTT_BASE_TOPIC);
+  Serial.print("MQTT Client Name: ");
+  Serial.println(CLIENT_NAME);
   Serial.print("MQTT retained: ");
   Serial.println(MQTT_RETAINED ? "true" : "false");
 
@@ -76,17 +79,17 @@ void setup() {
   client.enableDebuggingMessages();
   client.enableHTTPWebUpdater();
   client.enableOTA();
-  client.enableLastWillMessage(MQTT_BASE_TOPIC "/connected", "0", MQTT_RETAINED);
+  client.enableLastWillMessage(BASE_TOPIC "connected", "0", MQTT_RETAINED);
 }
 
 void onConnectionEstablished() {
-  client.subscribe(SENSOR_SET_TOPIC "/identify", [](const String & payload) {
+  client.subscribe(BASE_TOPIC_SET "identify", [](const String & payload) {
     digitalWrite(LED_BUILTIN, LED_BUILTIN_ON); // Turn the LED on
   });
 
-  client.publish(MQTT_BASE_TOPIC "/git-version", GIT_VERSION, MQTT_RETAINED);
+  client.publish(BASE_TOPIC "git-version", GIT_VERSION, MQTT_RETAINED);
   lastConnected = 1;
-  client.publish(MQTT_BASE_TOPIC "/connected", String(lastConnected), MQTT_RETAINED);
+  client.publish(BASE_TOPIC "connected", String(lastConnected), MQTT_RETAINED);
 }
 
 void loop() {
@@ -111,22 +114,22 @@ void loop() {
     if (nextConnected != lastConnected) {
       Serial.printf("set /connected from %d to %d\n", lastConnected, nextConnected);
       lastConnected = nextConnected;
-      client.publish(MQTT_BASE_TOPIC "/connected", String(nextConnected), MQTT_RETAINED);
+      client.publish(BASE_TOPIC "connected", String(nextConnected), MQTT_RETAINED);
     }
   }
 
   if (readSuccessful) {
     float avgT = mkTemp.addMeasurement(t);
 #ifdef DEBUG_KALMAN
-    client.publish(SENSOR_TOPIC "-orig/temp", String(t), MQTT_RETAINED);
-    client.publish(SENSOR_TOPIC "-avg/temp", String(avgT), MQTT_RETAINED);
+    client.publish(BASE_TOPIC_STATUS "orig/temp", String(t), MQTT_RETAINED);
+    client.publish(BASE_TOPIC_STATUS "avg/temp", String(avgT), MQTT_RETAINED);
 #endif
     Serial.printf("Temperature in Celsius: %5.1f Average: %6.2f\n", t, avgT);
 
     float avgH = mkHum.addMeasurement(h);
 #ifdef DEBUG_KALMAN
-    client.publish(SENSOR_TOPIC "-orig/hum", String(h), MQTT_RETAINED);
-    client.publish(SENSOR_TOPIC "-avg/hum", String(avgH), MQTT_RETAINED);
+    client.publish(BASE_TOPIC_STATUS "orig/hum", String(h), MQTT_RETAINED);
+    client.publish(BASE_TOPIC_STATUS "avg/hum", String(avgH), MQTT_RETAINED);
 #endif
     Serial.printf("Humidity    in Percent: %5.1f Average: %6.2f\n", h, avgH);
   } else {
@@ -137,8 +140,8 @@ void loop() {
   long rssi = WiFi.RSSI();
   float avgRssi = mkRssi.addMeasurement(rssi);
 #ifdef DEBUG_KALMAN
-  client.publish(SENSOR_TOPIC "-orig/rssi", String(rssi), MQTT_RETAINED);
-  client.publish(SENSOR_TOPIC "-avg/rssi", String(avgRssi), MQTT_RETAINED);
+  client.publish(BASE_TOPIC_STATUS "orig/rssi", String(rssi), MQTT_RETAINED);
+  client.publish(BASE_TOPIC_STATUS "avg/rssi", String(avgRssi), MQTT_RETAINED);
 #endif
   Serial.printf("RSSI        in     dBm: %3ld   Average: %6.2f\n", rssi, avgRssi);
 }
