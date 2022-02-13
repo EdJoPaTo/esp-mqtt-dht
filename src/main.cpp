@@ -88,8 +88,7 @@ void onConnectionEstablished() {
   });
 
   client.publish(BASE_TOPIC "git-version", GIT_VERSION, MQTT_RETAINED);
-  lastConnected = 1;
-  client.publish(BASE_TOPIC "connected", String(lastConnected), MQTT_RETAINED);
+  lastConnected = 0;
 }
 
 void loop() {
@@ -109,12 +108,12 @@ void loop() {
   float h = dht.getHumidity();
 
   boolean readSuccessful = dht.getStatus() == DHTesp::ERROR_NONE;
-  if (client.isConnected()) {
-    int nextConnected = readSuccessful ? 2 : 1;
-    if (nextConnected != lastConnected) {
-      Serial.printf("set /connected from %d to %d\n", lastConnected, nextConnected);
+  int nextConnected = readSuccessful ? 2 : 1;
+  if (nextConnected != lastConnected) {
+    Serial.printf("set /connected from %d to %d\n", lastConnected, nextConnected);
+    bool successful = client.publish(BASE_TOPIC "connected", String(nextConnected), MQTT_RETAINED);
+    if (successful) {
       lastConnected = nextConnected;
-      client.publish(BASE_TOPIC "connected", String(nextConnected), MQTT_RETAINED);
     }
   }
 
