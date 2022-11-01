@@ -136,11 +136,13 @@ void loop() {
     Serial.println(dht.getStatusString());
   }
 
-  long rssi = WiFi.RSSI();
-  float avgRssi = mkRssi.addMeasurement(rssi);
+	if (mqttClient.isWifiConnected()) {
+	  long rssi = WiFi.RSSI();
+	  float avgRssi = mkRssi.addMeasurement(rssi);
 #ifdef DEBUG_KALMAN
-  client.publish(BASE_TOPIC_STATUS "orig/rssi", String(rssi), MQTT_RETAINED);
-  client.publish(BASE_TOPIC_STATUS "avg/rssi", String(avgRssi), MQTT_RETAINED);
+	  client.publish(BASE_TOPIC_STATUS "orig/rssi", String(rssi), MQTT_RETAINED);
+  	client.publish(BASE_TOPIC_STATUS "avg/rssi", String(avgRssi), MQTT_RETAINED);
 #endif
-  Serial.printf("RSSI        in     dBm: %3ld   Average: %6.2f\n", rssi, avgRssi);
+	  Serial.printf("RSSI        in     dBm: %3ld   Average: %6.2f\n", rssi, avgRssi);
+	}
 }
