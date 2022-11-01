@@ -42,7 +42,7 @@ DHTesp dht;
   #define LED_BUILTIN_OFF LOW
 #endif
 
-EspMQTTClient client(
+EspMQTTClient mqttClient(
   WIFI_SSID,
   WIFI_PASSWORD,
   MQTT_SERVER,
@@ -52,9 +52,9 @@ EspMQTTClient client(
   1883
 );
 
-MQTTKalmanPublish mkTemp(client, BASE_TOPIC_STATUS "temp", MQTT_RETAINED, SEND_EVERY_TEMP, 0.2);
-MQTTKalmanPublish mkHum(client, BASE_TOPIC_STATUS "hum", MQTT_RETAINED, SEND_EVERY_HUM, 2);
-MQTTKalmanPublish mkRssi(client, BASE_TOPIC_STATUS "rssi", MQTT_RETAINED, SEND_EVERY_RSSI, 10);
+MQTTKalmanPublish mkTemp(mqttClient, BASE_TOPIC_STATUS "temp", MQTT_RETAINED, SEND_EVERY_TEMP, 0.2);
+MQTTKalmanPublish mkHum(mqttClient, BASE_TOPIC_STATUS "hum", MQTT_RETAINED, SEND_EVERY_HUM, 2);
+MQTTKalmanPublish mkRssi(mqttClient, BASE_TOPIC_STATUS "rssi", MQTT_RETAINED, SEND_EVERY_RSSI, 10);
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
@@ -76,24 +76,24 @@ void setup() {
     Serial.println(dht.getModel());
   }
 
-  client.enableDebuggingMessages();
-  client.enableHTTPWebUpdater();
-  client.enableOTA();
-  client.enableLastWillMessage(BASE_TOPIC "connected", "0", MQTT_RETAINED);
+  mqttClient.enableDebuggingMessages();
+  mqttClient.enableHTTPWebUpdater();
+  mqttClient.enableOTA();
+  mqttClient.enableLastWillMessage(BASE_TOPIC "connected", "0", MQTT_RETAINED);
 }
 
 void onConnectionEstablished() {
-  client.subscribe(BASE_TOPIC_SET "identify", [](const String & payload) {
+  mqttClient.subscribe(BASE_TOPIC_SET "identify", [](const String & payload) {
     digitalWrite(LED_BUILTIN, LED_BUILTIN_ON); // Turn the LED on
   });
 
-  client.publish(BASE_TOPIC "git-version", GIT_VERSION, MQTT_RETAINED);
+  mqttClient.publish(BASE_TOPIC "git-version", GIT_VERSION, MQTT_RETAINED);
   lastConnected = 0;
 }
 
 void loop() {
-  client.loop();
-  digitalWrite(LED_BUILTIN, client.isConnected() ? LED_BUILTIN_OFF : LED_BUILTIN_ON);
+  mqttClient.loop();
+  digitalWrite(LED_BUILTIN, mqttClient.isConnected() ? LED_BUILTIN_OFF : LED_BUILTIN_ON);
 
   delay(1000 / MQTT_UPDATES_PER_SECOND);
 
@@ -111,7 +111,7 @@ void loop() {
   int nextConnected = readSuccessful ? 2 : 1;
   if (nextConnected != lastConnected) {
     Serial.printf("set /connected from %d to %d\n", lastConnected, nextConnected);
-    bool successful = client.publish(BASE_TOPIC "connected", String(nextConnected), MQTT_RETAINED);
+    bool successful = mqttClient.publish(BASE_TOPIC "connected", String(nextConnected), MQTT_RETAINED);
     if (successful) {
       lastConnected = nextConnected;
     }
