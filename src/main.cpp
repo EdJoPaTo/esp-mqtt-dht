@@ -27,10 +27,8 @@ const int SEND_EVERY_RSSI = 12 * 5; // send every 5 minutes
 #define BASE_TOPIC_SET BASE_TOPIC "set/"
 
 int lastConnected = 0;
-const int SECONDS_BETWEEN_MEASURE = 5;
-const int MQTT_UPDATES_PER_SECOND = 1;
-const int INTERVALS = SECONDS_BETWEEN_MEASURE * MQTT_UPDATES_PER_SECOND;
-int currentCycle = 0;
+const unsigned long MEASURE_EVERY_N_MILLIS = 5 * 1000; // every 5 seconds
+const unsigned long MQTT_UPDATES_EVERY_N_MILLIS = 1000;
 
 DHTesp dht;
 
@@ -95,13 +93,20 @@ void loop() {
   mqttClient.loop();
   digitalWrite(LED_BUILTIN, mqttClient.isConnected() ? LED_BUILTIN_OFF : LED_BUILTIN_ON);
 
-  delay(1000 / MQTT_UPDATES_PER_SECOND);
+  auto now = millis();
 
-  currentCycle++;
-  if (currentCycle < INTERVALS) {
-    return;
+  static unsigned long nextMeasure = 0;
+  if (now < nextMeasure) {
+    auto remaining = nextMeasure - now;
+    if (remaining > MQTT_UPDATES_EVERY_N_MILLIS) {
+      delay(MQTT_UPDATES_EVERY_N_MILLIS);
+      return;
+    } else {
+      delay(remaining);
+    }
   }
-  currentCycle = 0;
+
+  nextMeasure = ((millis() / MEASURE_EVERY_N_MILLIS) + 1) * MEASURE_EVERY_N_MILLIS;
 
   // Read temperature as Celsius (the default)
   float t = dht.getTemperature();
@@ -109,10 +114,10 @@ void loop() {
 
   boolean readSuccessful = dht.getStatus() == DHTesp::ERROR_NONE;
   int nextConnected = readSuccessful ? 2 : 1;
-  if (nextConnected != lastConnected) {
-    Serial.printf("set /connected from %d to %d\n", lastConnected, nextConnected);
+  if (nextConnected != lastConnected && mqttClient.isConnected()) {
     bool successful = mqttClient.publish(BASE_TOPIC "connected", String(nextConnected), MQTT_RETAINED);
     if (successful) {
+      Serial.printf("set /connected from %d to %d\n", lastConnected, nextConnected);
       lastConnected = nextConnected;
     }
   }
@@ -136,13 +141,13 @@ void loop() {
     Serial.println(dht.getStatusString());
   }
 
-	if (mqttClient.isWifiConnected()) {
-	  long rssi = WiFi.RSSI();
-	  float avgRssi = mkRssi.addMeasurement(rssi);
+  if (mqttClient.isWifiConnected()) {
+    long rssi = WiFi.RSSI();
+    float avgRssi = mkRssi.addMeasurement(rssi);
 #ifdef DEBUG_KALMAN
-	  client.publish(BASE_TOPIC_STATUS "orig/rssi", String(rssi), MQTT_RETAINED);
-  	client.publish(BASE_TOPIC_STATUS "avg/rssi", String(avgRssi), MQTT_RETAINED);
+    client.publish(BASE_TOPIC_STATUS "orig/rssi", String(rssi), MQTT_RETAINED);
+    client.publish(BASE_TOPIC_STATUS "avg/rssi", String(avgRssi), MQTT_RETAINED);
 #endif
-	  Serial.printf("RSSI        in     dBm: %3ld   Average: %6.2f\n", rssi, avgRssi);
-	}
+    Serial.printf("RSSI        in     dBm: %3ld   Average: %6.2f\n", rssi, avgRssi);
+  }
 }
