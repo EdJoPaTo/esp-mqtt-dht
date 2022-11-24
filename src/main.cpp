@@ -109,28 +109,27 @@ void loop() {
   nextMeasure = ((millis() / MEASURE_EVERY_N_MILLIS) + 1) * MEASURE_EVERY_N_MILLIS;
 
   // Read temperature as Celsius (the default)
-  float t = dht.getTemperature();
-  float h = dht.getHumidity();
+  auto t = dht.getTemperature();
+  auto h = dht.getHumidity();
 
-  boolean readSuccessful = dht.getStatus() == DHTesp::ERROR_NONE;
-  int nextConnected = readSuccessful ? 2 : 1;
+  auto readSuccessful = dht.getStatus() == DHTesp::ERROR_NONE;
+  auto nextConnected = readSuccessful ? 2 : 1;
   if (nextConnected != lastConnected && mqttClient.isConnected()) {
-    bool successful = mqttClient.publish(BASE_TOPIC "connected", String(nextConnected), MQTT_RETAINED);
-    if (successful) {
+    if (mqttClient.publish(BASE_TOPIC "connected", String(nextConnected), MQTT_RETAINED)) {
       Serial.printf("set /connected from %d to %d\n", lastConnected, nextConnected);
       lastConnected = nextConnected;
     }
   }
 
   if (readSuccessful) {
-    float avgT = mkTemp.addMeasurement(t);
+    auto avgT = mkTemp.addMeasurement(t);
 #ifdef DEBUG_KALMAN
     client.publish(BASE_TOPIC_STATUS "orig/temp", String(t), MQTT_RETAINED);
     client.publish(BASE_TOPIC_STATUS "avg/temp", String(avgT), MQTT_RETAINED);
 #endif
     Serial.printf("Temperature in Celsius: %5.1f Average: %6.2f\n", t, avgT);
 
-    float avgH = mkHum.addMeasurement(h);
+    auto avgH = mkHum.addMeasurement(h);
 #ifdef DEBUG_KALMAN
     client.publish(BASE_TOPIC_STATUS "orig/hum", String(h), MQTT_RETAINED);
     client.publish(BASE_TOPIC_STATUS "avg/hum", String(avgH), MQTT_RETAINED);
@@ -142,12 +141,12 @@ void loop() {
   }
 
   if (mqttClient.isWifiConnected()) {
-    long rssi = WiFi.RSSI();
-    float avgRssi = mkRssi.addMeasurement(rssi);
+    auto rssi = WiFi.RSSI();
+    auto avgRssi = mkRssi.addMeasurement(rssi);
 #ifdef DEBUG_KALMAN
     client.publish(BASE_TOPIC_STATUS "orig/rssi", String(rssi), MQTT_RETAINED);
     client.publish(BASE_TOPIC_STATUS "avg/rssi", String(avgRssi), MQTT_RETAINED);
 #endif
-    Serial.printf("RSSI        in     dBm: %3ld   Average: %6.2f\n", rssi, avgRssi);
+    Serial.printf("RSSI        in     dBm: %3d   Average: %6.2f\n", rssi, avgRssi);
   }
 }
