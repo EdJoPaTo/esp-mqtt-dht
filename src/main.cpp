@@ -87,13 +87,15 @@ void onConnectionEstablished()
 	});
 
 	mqttClient.publish(BASE_TOPIC "git-version", GIT_VERSION, MQTT_RETAINED);
-	lastConnected = 0;
 }
 
 void loop()
 {
 	mqttClient.loop();
-	digitalWrite(LED_BUILTIN, mqttClient.isConnected() ? LED_BUILTIN_OFF : LED_BUILTIN_ON);
+	if (!mqttClient.isConnected()) {
+		lastConnected = 0;
+	}
+	digitalWrite(LED_BUILTIN, lastConnected == 2 ? LED_BUILTIN_OFF : LED_BUILTIN_ON);
 
 	auto now = millis();
 
