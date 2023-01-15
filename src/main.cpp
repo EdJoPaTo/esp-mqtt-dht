@@ -4,7 +4,6 @@
 #include <MqttKalmanPublish.h>
 #include <Wire.h>
 
-#define CLIENT_NAME "espDht-location"
 const bool MQTT_RETAINED = true;
 const bool IS_DHT11 = false;
 
