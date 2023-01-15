@@ -82,10 +82,6 @@ void setup()
 
 void onConnectionEstablished()
 {
-	mqttClient.subscribe(BASE_TOPIC_SET "identify", [](const String &payload) {
-		digitalWrite(LED_BUILTIN, LED_BUILTIN_ON); // Turn the LED on
-	});
-
 	mqttClient.publish(BASE_TOPIC "git-version", GIT_VERSION, MQTT_RETAINED);
 }
 
