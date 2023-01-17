@@ -81,6 +81,7 @@ void setup()
 
 void onConnectionEstablished()
 {
+	mqttClient.publish(BASE_TOPIC "git-remote", GIT_REMOTE, MQTT_RETAINED);
 	mqttClient.publish(BASE_TOPIC "git-version", GIT_VERSION, MQTT_RETAINED);
 }
 
